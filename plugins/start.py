@@ -83,8 +83,8 @@ async def start_command(client: Client, message: Message):
         reply_markup = InlineKeyboardMarkup(
             [
                 [
-                    InlineKeyboardButton("⚡️ ᴀʙᴏᴜᴛ", callback_data = "about"),
-                    InlineKeyboardButton('🍁 ᴘʀᴇᴍɪᴜᴍ', url='https://t.me/OtakuFlix_Network/4639')
+                    InlineKeyboardButton('𝗔𝗗𝗗𝗟𝗜𝗦𝗧 🙏', url='https://t.me/addlist/rMLA4niKz9xjYjg1'),
+                    InlineKeyboardButton('🍁 𝐀𝐏𝐍𝐈 𝐊𝐀𝐊𝐒𝐇𝐀', url='https://youtube.com/@team_opmaster')
                 ]
             ]
                 )
