@@ -87,8 +87,8 @@ async def start_command(client: Client, message: Message):
             [
     
     [
-                    InlineKeyboardButton("⚡️ ᴀʙᴏᴜᴛ", callback_data = "about"),
-                    InlineKeyboardButton('🍁 sᴇʀɪᴇsғʟɪx', url='https://t.me/Team_Netflix/40')
+                    InlineKeyboardButton("👻 ABOUT", callback_data = "about"),
+                    InlineKeyboardButton('🍁 MAIN CHANNEL', url='https://t.me/HIDDEN_OFFICIALS')
         
     ]
             ]
@@ -122,11 +122,11 @@ REPLY_ERROR = "<code>Use this command as a reply to any telegram message without
 async def not_joined(client: Client, message: Message):
     buttons = [
         [
-            InlineKeyboardButton(text="• ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ", url=client.invitelink2),
-            InlineKeyboardButton(text="ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ •", url=client.invitelink3),
+            InlineKeyboardButton(text="JOIN 1st 👍", url=client.invitelink2),
+            InlineKeyboardButton(text="Join 2nd 😁", url=client.invitelink3),
         ],
         [
-            InlineKeyboardButton(text="• ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ •", url=client.invitelink),
+            InlineKeyboardButton(text="JOIN 3rd CHANNEL 👻", url=client.invitelink),
         ]
     ]
     try:
