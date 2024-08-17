@@ -10,12 +10,12 @@ async def cb_handler(client: Bot, query: CallbackQuery):
     data = query.data
     if data == "about":
         await query.message.edit_text(
-            text = f"<b>○ ᴏᴡɴᴇʀ : <a href='tg://user?id={OWNER_ID}'>ᴍɪᴋᴇʏ</a>\n○ ᴍʏ ᴜᴘᴅᴀᴛᴇs : <a href='https://t.me/CodeFlix_Bots'>ᴄᴏᴅᴇғʟɪx ʙᴏᴛs</a>\n○ ᴍᴏᴠɪᴇs ᴜᴘᴅᴀᴛᴇs : <a href='https://t.me/Team_Netflix'>ᴛᴇᴀᴍ ɴᴇᴛғʟɪx</a>\n○ ᴏᴜʀ ᴄᴏᴍᴍᴜɴɪᴛʏ : <a href='https://t.me/otakuflix_network'>ᴏᴛᴀᴋᴜғʟɪx ɴᴇᴛᴡᴏʀᴋ</a>\n○ ᴀɴɪᴍᴇ ᴄʜᴀᴛ : <a href='https://t.me/weebzonex'>ᴡᴇᴇʙ ᴢᴏɴᴇ</a></b>",
+            text = f"<b>○ Developer: <a href='http://t.me/Hidden_contact_bot'>HIDDEN</a>\n○ ᴍʏ ᴜᴘᴅᴀᴛᴇs : <a href='https://t.me/HIDDEN_OFFICIALS'>ᴛᴇᴀᴍ ʜɪᴅᴅᴇɴ</a></b>",
             disable_web_page_preview = True,
             reply_markup = InlineKeyboardMarkup(
                 [
                     [
-                    InlineKeyboardButton('𝗔𝗗𝗗𝗟𝗜𝗦𝗧 🙏', url='https://t.me/addlist/rMLA4niKz9xjYjg1'),
+                    InlineKeyboardButton('𝗔𝗞 𝗕𝗢𝗧𝗦', url='https://t.me/hidden_officials_1'),
                     InlineKeyboardButton('🍁 𝐀𝐏𝐍𝐈 𝐊𝐀𝐊𝐒𝐇𝐀', url='https://youtube.com/@team_opmaster')
                     ]
                 ]
