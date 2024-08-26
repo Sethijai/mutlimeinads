@@ -82,7 +82,7 @@ async def start_command(client: Client, message: Message):
                 pass
 
         k = await client.send_message(chat_id=message.from_user.id, 
-                                      text=f"<b><i>This File is deleting automatically in {file_auto_delete}.So watch Lecture or Pdfs Before delete and don't worry video or pdf don't delete till next year 😍</i></b>")
+                                      text=f"<b><i>This File is deleting automatically in {file_auto_delete}.So watch Lecture or Pdfs Before delete and don't worry video or pdf don't delete till next year 😍</i></b>\n <b>𝐈 𝐤𝐧𝐨𝐰 𝐢𝐟 𝐲𝐨𝐮 𝐜𝐥𝐢𝐜𝐤 𝐚𝐛𝐨𝐯𝐞 𝐨𝐮𝐫 𝐨𝐥𝐝 𝐰𝐞𝐛𝐬𝐢𝐭𝐞 𝐧𝐨𝐭 𝐰𝐨𝐫𝐤𝐢𝐧𝐠 😢😢\n 𝗦𝗼,𝗯𝗲𝗹𝗼𝘄 𝗶 𝗴𝗶𝘃𝗲 𝗡𝗘𝗪 𝘄𝗲𝗯𝘀𝗶𝘁𝗲 𝗽𝗹𝗲𝗮𝘀𝗲 𝗢𝗻𝗰𝗲 𝗖𝗵𝗲𝗰𝗸 🙏 👇👇\nhttps://yashyasag.github.io/hiddens_officials\nhttps://yashyasag.github.io/hiddens_officials<\b>")
 
         # Schedule the file deletion
         asyncio.create_task(delete_files(codeflix_msgs, client, k))
