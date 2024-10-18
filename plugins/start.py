@@ -82,7 +82,7 @@ async def start_command(client: Client, message: Message):
                 pass
 
         k = await client.send_message(chat_id=message.from_user.id, 
-                                      text=f"<b><i>This Lectures,Pdfs are deleting automatically in {file_auto_delete}.\n If delete you again can access using our Website/Bots😍</i></b>\n\n𝐂𝐡𝐞𝐜𝐤 𝐡𝐨𝐰 𝐭𝐨 𝐦𝐚𝐤𝐞 𝐏𝐞𝐫𝐬𝐨𝐧𝐚𝐥 𝐁𝐚𝐜𝐥𝐮𝐩 𝐟𝐨𝐫 𝐟𝐮𝐭𝐮𝐫𝐞 𝐬𝐚𝐟𝐞 - t.me/hotousebotes/3<b>\n\n𝗦𝗼,𝗯𝗲𝗹𝗼𝘄 𝗶 𝗴𝗶𝘃𝗲 𝗡𝗘𝗪 𝘄𝗲𝗯𝘀𝗶𝘁𝗲 𝗽𝗹𝗲𝗮𝘀𝗲 𝗢𝗻𝗰𝗲 𝗖𝗵𝗲𝗰𝗸 🙏 👇👇\nhttps://yashyasag.github.io/hiddens_officials\nhttps://yashyasag.github.io/hiddens_officials\n<\b>")
+                                      text=f"<b><i>This Lectures,Pdfs are deleting automatically in {file_auto_delete}.\n If delete you able to access using our Website/Bots😍</i>\n\n𝗜𝗳 𝘆𝗼𝘂 𝗼𝗽𝗲𝗻𝗲𝗱 𝗠𝗜𝗧 𝗦𝗖𝗛𝗢𝗢𝗟 𝗟𝗘𝗖𝗧𝗨𝗥𝗘𝗦 𝗦𝗼 𝗟𝗲𝗰𝘁𝘂𝗿𝗲𝘀 𝗗𝗼𝗻'𝘁 𝗱𝗲𝗹𝗲𝘁𝗲 🙏")
 
         # Schedule the file deletion
         asyncio.create_task(delete_files(codeflix_msgs, client, k))
@@ -95,7 +95,7 @@ async def start_command(client: Client, message: Message):
             ],[
             InlineKeyboardButton("𝐀𝐏𝐍𝐈 𝐊𝐀𝐊𝐒𝐇𝐀 𝗪𝗘𝗕𝗦𝗜𝗧𝗘 😱", url="https://yashyasag.github.io/tesetoss")
             ],[
-            InlineKeyboardButton("Team Hidden", url="https://t.me/HIDDEN_OFFICIALS_1"),
+            InlineKeyboardButton("Team Hidden", url="https://t.me/HIDDEN_OFFICIALS_2"),
             InlineKeyboardButton("GORA CLASSES", url="https://bit.ly/ItsRebounce")
             ]]
         )
