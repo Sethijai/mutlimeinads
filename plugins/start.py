@@ -82,7 +82,7 @@ async def start_command(client: Client, message: Message):
                 pass
 
         k = await client.send_message(chat_id=message.from_user.id, 
-                                      text=f"<b><i>This Lectures,Pdfs are deleting automatically in {file_auto_delete}.\n If delete you able to access using our Website/Bots😍</i>\n\n𝗜𝗳 𝘆𝗼𝘂 𝗼𝗽𝗲𝗻𝗲𝗱 𝗠𝗜𝗧 𝗦𝗖𝗛𝗢𝗢𝗟 𝗟𝗘𝗖𝗧𝗨𝗥𝗘𝗦 𝗦𝗼 𝗟𝗲𝗰𝘁𝘂𝗿𝗲𝘀 𝗗𝗲𝗹𝗲𝘁𝗲 𝗮𝗳𝘁𝗲𝗿 {file_auto_delete} aur delete hone ke baad wapas website se link open karke access kar sakte ho 𝐓𝐨𝐡 𝐃𝐞𝐥𝐞𝐭𝐞 𝐡𝐨 𝐮𝐬𝐤𝐞 𝐩𝐞𝐡𝐥𝐞 𝐏𝐚𝐝𝐡 𝐥𝐨 ☠️🙏")
+                                      text=f"<b><i>This Lectures,Pdfs are deleting automatically in {file_auto_delete}.\n If delete you able to access using our Website/Bots😍</i>\n\n𝗜𝗳 𝘆𝗼𝘂 𝗼𝗽𝗲𝗻𝗲𝗱 𝗠𝗜𝗧 𝗦𝗖𝗛𝗢𝗢𝗟 𝗟𝗘𝗖𝗧𝗨𝗥𝗘𝗦 𝗦𝗼 𝗟𝗲𝗰𝘁𝘂𝗿𝗲𝘀 𝗗𝗲𝗹𝗲𝘁𝗲 𝗮𝗳𝘁𝗲𝗿 {file_auto_delete} aur delete hone ke baad wapas website se link open karke access kar sakte ho 𝐓𝐨𝐡 𝐃𝐞𝐥𝐞𝐭𝐞 𝐡𝐨 𝐮𝐬𝐤𝐞 𝐩𝐞𝐡𝐥𝐞 𝐩𝐚𝐝𝐡 𝐥𝐨 ☠️🙏")
 
         # Schedule the file deletion
         asyncio.create_task(delete_files(codeflix_msgs, client, k))
