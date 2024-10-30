@@ -37,8 +37,9 @@ async def new_post(client: Client, message: Message):
     base64_string = await encode(string)
     link = f"https://t.me/{client.username}?start={base64_string}"
     
+    # Removed the line that edits message with the link
     try:
-        await message.edit(f"<b>Here is your link</b>\n\n<code>{link}</code>", disable_web_page_preview=True)
+        pass  # Placeholder for any future use
     except Exception as e:
         print(e)
         pass
