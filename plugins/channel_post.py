@@ -23,8 +23,11 @@ async def channel_post(client: Client, message: Message):
     converted_id = post_message.id * abs(client.db_channel.id)
     string = f"get-{converted_id}"
     base64_string = await encode(string)
-    link = f"https://t.me/{client.username}?start={base64_string}"
-
+    if WEBSITE_URL_MODE == True:
+        link = f"{WEBSITE_URL}?HACKHEIST={base64_string}"
+    else:
+        link = f"https://t.me/{client.username}?start={base64_string}"
+        
     await reply_text.edit(f"<b>Here is your link</b>\n\n<code>{link}</code>", disable_web_page_preview=True)
 
 @Bot.on_message(filters.channel & filters.incoming & filters.chat(CHANNEL_ID))
@@ -35,7 +38,10 @@ async def new_post(client: Client, message: Message):
     converted_id = message.id * abs(client.db_channel.id)
     string = f"get-{converted_id}"
     base64_string = await encode(string)
-    link = f"https://t.me/{client.username}?start={base64_string}"
+    if WEBSITE_URL_MODE == True:
+        link = f"{WEBSITE_URL}?HACKHEIST={base64_string}"
+    else:
+        link = f"https://t.me/{client.username}?start={base64_string}"
     
     # Removed the line that edits message with the link
     try:
