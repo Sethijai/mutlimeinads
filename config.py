@@ -40,10 +40,9 @@ FORCE_SUB_CHANNEL2 = int(os.environ.get("FORCE_SUB_CHANNEL2", "0"))
 
 TG_BOT_WORKERS = int(os.environ.get("TG_BOT_WORKERS", "4"))
 
-WEBSITE_URL_MODE = bool(environ.get('WEBSITE_URL_MODE', True)) # Set True or False
+WEBSITE_URL_MODE = os.environ.get("WEBSITE_URL_MODE", "True")
+WEBSITE_URL = os.environ.get("WEBSITE_URL", "https://hackheistop1.blogspot.com/2024/12/1st-try.html")
 
-# If Website Url Mode Is True Then Fill All Required Variable, If False Then Don't Fill.
-WEBSITE_URL = environ.get("WEBSITE_URL", "https://hackheistop1.blogspot.com/2024/12/1st-try.html") # For More Information Check Video On Yt - @Tech_VJ
 
 
 #start message
