@@ -4,7 +4,7 @@ from bot import Bot
 from config import ADMINS
 from helper_func import encode, get_message_id
 
-@Bot.on_message(filters.private & filters.user(ADMINS) & filters.command('bulk'))
+@Bot.on_message(filters.private & filters.user(ADMINS) & filters.command('batch'))
 async def bulk(client: Client, message: Message):
     try:
         bulk_input = await client.ask(
