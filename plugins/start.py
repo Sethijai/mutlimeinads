@@ -36,7 +36,7 @@ async def start_command(client: Client, message: Message):
         if len(argument) == 3:
             try:
                 start = int(int(argument[1]) / abs(client.db_channel.id))
-                end = int(int(argument[2]) / abs(client.db_channel.id))
+                end = int(int(argument[2]) / abs(client.db_channel.id)) - 1  # Subtract 1 to send one less message
                 ids = range(start, end + 1) if start <= end else list(range(start, end - 1, -1))
             except Exception as e:
                 print(f"Error decoding IDs: {e}")
