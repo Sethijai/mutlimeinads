@@ -2,9 +2,15 @@ from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from bot import Bot
 from config import ADMINS
-from helper_func import encode, get_message_id
+from helper_func import encode
 
-@Bot.on_message(filters.private & filters.user(ADMINS) & filters.command('batch'))
+import re
+
+def extract_message_id(url):
+    match = re.search(r'/(\d+)$', url)
+    return int(match.group(1)) if match else None
+
+@Bot.on_message(filters.private & filters.user(ADMINS) & filters.command('bulk'))
 async def bulk(client: Client, message: Message):
     try:
         bulk_input = await client.ask(
@@ -36,8 +42,8 @@ async def bulk(client: Client, message: Message):
             response_text += f"{subject}\n❌ Error: Missing links\n\n"
             continue
 
-        f_msg_id = await get_message_id(client, links[0])
-        s_msg_id = await get_message_id(client, links[1])
+        f_msg_id = extract_message_id(links[0])
+        s_msg_id = extract_message_id(links[1])
 
         if not f_msg_id or not s_msg_id:
             response_text += f"{subject}\n❌ Error: Invalid links\n\n"
