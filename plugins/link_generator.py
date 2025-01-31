@@ -10,7 +10,7 @@ def extract_message_id(url):
     match = re.search(r'/(\d+)$', url)
     return int(match.group(1)) if match else None
 
-@Bot.on_message(filters.private & filters.user(ADMINS) & filters.command('bulk'))
+@Bot.on_message(filters.private & filters.user(ADMINS) & filters.command('batch'))
 async def bulk(client: Client, message: Message):
     try:
         bulk_input = await client.ask(
