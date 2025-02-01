@@ -54,7 +54,7 @@ async def bulk(client: Client, message: Message):
         base64_string = await encode(string)
         batch_link = f"https://t.me/{client.username}?start={base64_string}"
 
-        response_text += f"# text: ₹{subject}₹, url: ₹{batch_link}₹ #,\n"
+        response_text += f"# text: ₹{subject}₹, url: ₹{batch_link}₹ !,\n"
 
     # Send response
     reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔁 Share URL", url=f'https://telegram.me/share/url?url={batch_link}')]])
