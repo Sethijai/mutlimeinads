@@ -12,17 +12,7 @@ codeflixbots = FILE_AUTO_DELETE
 subaru = codeflixbots
 file_auto_delete = humanize.naturaldelta(subaru)
 
-CUSTOM_CAPTION = (
-    f"<b>{previouscaption}</b>\n"
-    f"<b>━━━━━━━━━━━━━━━━━◇</b>\n"
-    f"<b>⛧ 🄱🅈 :-) </b>"
-    f"<b><a href='https://yashyasag.github.io/hiddens'>ℍ𝔸ℂ𝕂ℍ𝔼𝕀𝕊𝕋 😈</a></b> <b>♛</b>\n"
-    f"<b>━━━━━━━━━━━━━━━━━◇</b>\n"
-    f"<b>🙏 sʜᴀʀᴇ ᴀɴᴅ sᴜᴘᴘᴏʀᴛ ᴜs 👇</b>\n"
-    f"<b>—————————————————</b>\n"
-    f"<b><a href='https://yashyasag.github.io/hiddens'>🚀 𝗠𝗢𝗥𝗘 𝗪𝗘𝗕𝗦𝗜𝗧𝗘𝗦 🌟</a></b>\n"
-    f"<b>—————————————————</b>"
-)
+
 
 @Bot.on_message(filters.command('start') & filters.private & subscribed)
 async def start_command(client: Client, message: Message):
