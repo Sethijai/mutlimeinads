@@ -56,7 +56,7 @@ FORCE_MSG = os.environ.get("FORCE_SUB_MESSAGE", "<b>ʜᴇʟʟᴏ {first}\nsᴏʀ
 
 #set your Custom Caption here, Keep None for Disable Custom Caption
 
-CUSTOM_CAPTION = os.environ.get("CUSTOM_CAPTION", """<b>{previouscaption}</b>\n
+CUSTOM_CAPTION = os.environ.get("CUSTOM_CAPTION", """<b>{previouscaption}</b>
 <b>━━━━━━━━━━━━━━━━━◇</b>
 <b>⛧ 🄱🅈 :-) </b><b><a href="https://yashyasag.github.io/hiddens">ℍ𝔸ℂ𝕂ℍ𝔼𝕀𝕊𝕋 😈</a></b> <b>♛</b>
 <b>━━━━━━━━━━━━━━━━━◇</b>
