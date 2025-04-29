@@ -264,4 +264,4 @@ async def delete_files(messages, client, k):
         keyboard = None
 
     # Edit message with the button
-    await k.edit_text("<b><i>Your Video / File Is Successfully Deleted ✅</i></b>", reply_markup=keyboard)
+    await k.edit_text("<b><i>Your Video / Images Deleted 🥲 Again Access through links 🌚</i></b>", reply_markup=keyboard)
