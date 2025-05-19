@@ -1,5 +1,6 @@
 import pymongo
 import time
+from typing import Tuple  # Added for Python 3.8 compatibility
 from config import DB_URI, DB_NAME
 
 dbclient = pymongo.MongoClient(DB_URI)
@@ -64,7 +65,7 @@ async def remove_premium_user(user_id: int) -> None:
     """
     premium_users.delete_one({'_id': user_id})
 
-async def is_premium_user(user_id: int) -> tuple[bool, int]:
+async def is_premium_user(user_id: int) -> Tuple[bool, int]:
     """
     Check if a user is premium and return their remaining time (in seconds).
     Returns (is_premium, remaining_time).
