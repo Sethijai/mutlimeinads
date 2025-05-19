@@ -25,6 +25,7 @@ async def start_command(client: Client, message: Message):
     if len(text) > 7:
         try:
             base64_string = text.split(" ", 1)[1]
+            await message.reply_text(f"Processing link with base64: {base64_string}")
         except IndexError:
             await message.reply_text("Welcome to the bot!")
             return
@@ -33,12 +34,15 @@ async def start_command(client: Client, message: Message):
         is_new_format = False
         try:
             string = await decode(base64_string)
+            await message.reply_text(f"Old format decoded: {string}")
             argument = string.split("-")
             if len(argument) == 3:
                 try:
                     start = int(int(argument[1]) / abs(client.db_channel.id))
                     end = int(int(argument[2]) / abs(client.db_channel.id))
-                except (ValueError, IndexError):
+                    await message.reply_text(f"Old format IDs: {start} to {end}")
+                except (ValueError, IndexError) as e:
+                    await message.reply_text(f"Error parsing old format: {str(e)}")
                     return
                 if start <= end:
                     ids = range(start, end + 1)
@@ -53,15 +57,19 @@ async def start_command(client: Client, message: Message):
             elif len(argument) == 2:
                 try:
                     ids = [int(int(argument[1]) / abs(client.db_channel.id))]
-                except (ValueError, IndexError):
+                    await message.reply_text(f"Old format single ID: {ids[0]}")
+                except (ValueError, IndexError) as e:
+                    await message.reply_text(f"Error parsing old format single ID: {str(e)}")
                     return
             else:
                 raise ValueError("Invalid old format")
-        except ValueError:
+        except ValueError as e:
+            await message.reply_text(f"Old format failed: {str(e)}, trying new format...")
             # Fallback to new format: get-HACKHEIST_{f_msg_id * 10}-{s_msg_id * 10}
             try:
                 f_msg_id, s_msg_id = await decode_link(base64_string)
                 is_new_format = True
+                await message.reply_text(f"New format decoded: {f_msg_id}, {s_msg_id}")
                 if f_msg_id <= s_msg_id:
                     ids = range(f_msg_id, s_msg_id + 1)
                 else:
@@ -72,15 +80,16 @@ async def start_command(client: Client, message: Message):
                         i -= 1
                         if i < s_msg_id:
                             break
-            except ValueError:
-                await message.reply_text("Invalid link format!")
+            except ValueError as e:
+                await message.reply_text(f"Invalid link format: {str(e)}")
                 return
 
         temp_msg = await message.reply("Wait A Second...")
         try:
             messages = await get_messages(client, ids)
-        except:
-            await message.reply_text("Something went wrong..!")
+            await temp_msg.edit("Messages fetched successfully!")
+        except Exception as e:
+            await temp_msg.edit(f"Something went wrong: {str(e)}")
             return
         await temp_msg.delete()
 
@@ -115,8 +124,8 @@ async def start_command(client: Client, message: Message):
                     reply_markup=reply_markup,
                     protect_content=protect_content
                 )
-            except:
-                pass
+            except Exception as e:
+                await message.reply_text(f"Error copying message: {str(e)}")
         return
     else:
         reply_markup = InlineKeyboardMarkup(
