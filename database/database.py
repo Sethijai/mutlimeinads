@@ -1,6 +1,6 @@
 import pymongo
 import time
-from typing import Tuple  # Added for Python 3.8 compatibility
+from typing import Tuple  # For Python 3.8 compatibility
 from config import DB_URI, DB_NAME
 
 dbclient = pymongo.MongoClient(DB_URI)
@@ -38,7 +38,8 @@ async def del_user(user_id: int) -> None:
 
 async def add_premium_user(user_id: int, duration: int) -> None:
     """
-    Add a user as premium with an expiration time (duration in seconds).
+    Add a user as premium with an expiration time (duration in seconds from command time).
+    Stores expiration_time as current timestamp + duration.
     """
     expiration_time = int(time.time()) + duration
     premium_users.update_one(
@@ -49,8 +50,8 @@ async def add_premium_user(user_id: int, duration: int) -> None:
 
 async def add_all_premium(duration: int) -> None:
     """
-    Set all users as premium for the specified duration (in seconds).
-    Store a global expiration time for 'All' users.
+    Set all users as premium for the specified duration (in seconds from command time).
+    Stores a global expiration time for 'All' users.
     """
     expiration_time = int(time.time()) + duration
     premium_users.update_one(
@@ -67,14 +68,14 @@ async def remove_premium_user(user_id: int) -> None:
 
 async def is_premium_user(user_id: int) -> Tuple[bool, int]:
     """
-    Check if a user is premium and return their remaining time (in seconds).
+    Check if a user is premium by comparing current time to expiration time.
     Returns (is_premium, remaining_time).
-    If remaining_time is 0 or negative, the user is not premium.
+    is_premium is True if remaining_time > 0, False otherwise.
     """
-    # Check individual premium status
-    user_doc = premium_users.find_one({'_id': user_id})
     current_time = int(time.time())
     
+    # Check individual premium status
+    user_doc = premium_users.find_one({'_id': user_id})
     if user_doc and 'expiration_time' in user_doc:
         remaining_time = user_doc['expiration_time'] - current_time
         if remaining_time > 0:
