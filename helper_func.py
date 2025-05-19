@@ -121,7 +121,7 @@ async def encode_link(f_msg_id: int, s_msg_id: int, channel_id: int) -> str:
     # Return Telegram bot deep link
     return f"https://t.me/AK_LECTURES_BOT?start={base64_string}"
 
-async def decode_link(encoded_string: str) -> tuple[int, int]:
+async def decode_link(encoded_string: str) -> Tuple[int, int]:
     """
     Decode a base64 string from a Telegram bot deep link back to original message IDs.
     
