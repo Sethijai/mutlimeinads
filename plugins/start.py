@@ -40,16 +40,15 @@ async def start_command(client: Client, message: Message):
             await message.reply_text(f"Decoded string: {string}")
             
             # Check for new format: get-HACKHEIST_{f_encoded}-{s_encoded}
-            if string.startswith("get-HACKHEIST-"):
+            if string.startswith("get-HACKHEIST_"):
                 is_new_format = True
-                # Check premium status
                 is_premium, remaining_time = await is_premium_user(id)
                 if not is_premium:
-                    if remaining_time <= 0 and (await is_premium_user(id))[0]:
+                    if remaining_time <= 0 and premium_users.find_one({'_id': id}):
                         await message.reply_text("Your Premium Expired")
                     else:
                         await message.reply_text("You are not a premium user")
-                    return
+        return
                 try:
                     f_msg_id, s_msg_id = await decode_link(base64_string)
                     await message.reply_text(f"New format decoded: {f_msg_id}, {s_msg_id}")
