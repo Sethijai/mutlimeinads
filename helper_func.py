@@ -113,7 +113,7 @@ async def encode_link(f_msg_id: int, s_msg_id: int, channel_id: int) -> str:
     s_encoded = s_msg_id * 10
     
     # Create the string to encode
-    raw_string = f"get-HACKHEIST_{f_encoded}-{s_encoded}"
+    raw_string = f"get-HACKHEIST-{f_encoded}-{s_encoded}"
     
     # Encode to base64
     string_bytes = raw_string.encode("ascii")
@@ -145,13 +145,13 @@ async def decode_link(encoded_string: str) -> Tuple[int, int]:
         raise ValueError("Invalid base64 encoded string")
     
     # Parse the decoded string
-    if not decoded_string.startswith("get-HACKHEIST_"):
+    if not decoded_string.startswith("get-HACKHEIST-"):
         raise ValueError("Invalid encoded string format")
     
     # Remove the prefix and split the remaining string
     try:
         # Remove 'get-HACKHEIST_' prefix
-        number_part = decoded_string[len("get-HACKHEIST_"):]
+        number_part = decoded_string[len("get-HACKHEIST-"):]
         # Split by '-' to get f_encoded and s_encoded
         parts = number_part.split("-")
         if len(parts) != 2:
