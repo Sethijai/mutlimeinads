@@ -48,7 +48,7 @@ async def start_command(client: Client, message: Message):
                         await message.reply_text("Your Premium Expired")
                     else:
                         await message.reply_text("You are not a premium user")
-        return
+                    return
                 try:
                     f_msg_id, s_msg_id = await decode_link(base64_string)
                     await message.reply_text(f"New format decoded: {f_msg_id}, {s_msg_id}")
