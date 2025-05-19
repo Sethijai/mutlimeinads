@@ -40,7 +40,7 @@ async def start_command(client: Client, message: Message):
             await message.reply_text(f"Decoded string: {string}")
             
             # Check for new format: get-HACKHEIST_{f_encoded}-{s_encoded}
-            if string.startswith("get-HACKHEIST_"):
+            if string.startswith("get-HACKHEIST-"):
                 is_new_format = True
                 # Check premium status
                 is_premium, remaining_time = await is_premium_user(id)
