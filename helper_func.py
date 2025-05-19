@@ -63,18 +63,108 @@ async def is_subscribed(filter, client, update):
     else:
         return True
         
-async def encode(string):
+async def encode(string: str) -> str:
+    """
+    Encode a string to URL-safe base64, removing padding.
+    
+    Args:
+        string: The input string to encode
+        
+    Returns:
+        URL-safe base64 encoded string without padding
+    """
     string_bytes = string.encode("ascii")
     base64_bytes = base64.urlsafe_b64encode(string_bytes)
-    base64_string = (base64_bytes.decode("ascii")).strip("=")
+    base64_string = base64_bytes.decode("ascii").strip("=")
     return base64_string
 
-async def decode(base64_string):
-    base64_string = base64_string.strip("=") # links generated before this commit will be having = sign, hence striping them to handle padding errors.
+async def decode(base64_string: str) -> str:
+    """
+    Decode a URL-safe base64 string back to the original string.
+    
+    Args:
+        base64_string: The base64 encoded string
+        
+    Returns:
+        Decoded original string
+    """
+    base64_string = base64_string.strip("=")  # Handle links generated before padding fix
     base64_bytes = (base64_string + "=" * (-len(base64_string) % 4)).encode("ascii")
-    string_bytes = base64.urlsafe_b64decode(base64_bytes) 
+    string_bytes = base64.urlsafe_b64decode(base64_bytes)
     string = string_bytes.decode("ascii")
     return string
+
+async def encode_link(f_msg_id: int, s_msg_id: int, channel_id: int) -> str:
+    """
+    Encode Telegram message IDs and return a Telegram bot deep link.
+    
+    Args:
+        f_msg_id: First message ID
+        s_msg_id: Second message ID
+        channel_id: Channel ID (client.db_channel.id), included for context
+        
+    Returns:
+        Telegram bot deep link in format: https://t.me/AK_LECTURES_BOT?start={encoded_string}
+    """
+    # Calculate multiplied values
+    f_encoded = f_msg_id * 10
+    s_encoded = s_msg_id * 10
+    
+    # Create the string to encode
+    raw_string = f"get-HACKHEIST_{f_encoded}-{s_encoded}"
+    
+    # Encode to base64
+    string_bytes = raw_string.encode("ascii")
+    base64_bytes = base64.urlsafe_b64encode(string_bytes)
+    base64_string = base64_bytes.decode("ascii").rstrip("=")
+    
+    # Return Telegram bot deep link
+    return f"https://t.me/AK_LECTURES_BOT?start={base64_string}"
+
+async def decode_link(encoded_string: str) -> tuple[int, int]:
+    """
+    Decode a base64 string from a Telegram bot deep link back to original message IDs.
+    
+    Args:
+        encoded_string: The base64 encoded string (without the Telegram URL prefix)
+        
+    Returns:
+        Tuple of (f_msg_id, s_msg_id)
+    """
+    # Handle padding
+    encoded_string = encoded_string.rstrip("=")
+    base64_bytes = (encoded_string + "=" * (-len(encoded_string) % 4)).encode("ascii")
+    
+    # Decode base64
+    try:
+        string_bytes = base64.urlsafe_b64decode(base64_bytes)
+        decoded_string = string_bytes.decode("ascii")
+    except (base64.binascii.Error, UnicodeDecodeError):
+        raise ValueError("Invalid base64 encoded string")
+    
+    # Parse the decoded string
+    if not decoded_string.startswith("get-HACKHEIST_"):
+        raise ValueError("Invalid encoded string format")
+    
+    # Remove the prefix and split the remaining string
+    try:
+        # Remove 'get-HACKHEIST_' prefix
+        number_part = decoded_string[len("get-HACKHEIST_"):]
+        # Split by '-' to get f_encoded and s_encoded
+        parts = number_part.split("-")
+        if len(parts) != 2:
+            raise ValueError("Invalid encoded string structure")
+        
+        f_encoded = int(parts[0])
+        s_encoded = int(parts[1])
+    except (ValueError, IndexError):
+        raise ValueError("Invalid number format in encoded string")
+    
+    # Convert back to original message IDs
+    f_msg_id = f_encoded // 10
+    s_msg_id = s_encoded // 10
+    
+    return f_msg_id, s_msg_id
 
 async def get_messages(client, message_ids):
     messages = []
