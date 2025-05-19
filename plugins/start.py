@@ -44,11 +44,14 @@ async def start_command(client: Client, message: Message):
                 is_new_format = True
                 # Check premium status
                 is_premium, remaining_time = await is_premium_user(id)
-                await message.reply_text(f"Premium check: is_premium={is_premium}, remaining_time={remaining_time}")
+                current_time = int(time.time())
+                await message.reply_text(
+                    f"Premium check for user {id}: is_premium={is_premium}, remaining_time={remaining_time}, current_time={current_time}"
+                )
                 if not is_premium:
                     # Check if user was previously premium (has an expired entry)
                     user_doc = premium_users.find_one({'_id': id})
-                    if user_doc and 'expiration_time' in user_doc and user_doc['expiration_time'] <= int(time.time()):
+                    if user_doc and 'expiration_time' in user_doc and user_doc['expiration_time'] <= current_time:
                         await message.reply_text("Your premium ended")
                     else:
                         await message.reply_text("You are not a premium user")
@@ -268,7 +271,7 @@ async def list_premium_users_command(client: Client, message: Message):
         else:
             response += f"User {user_id}: {remaining_time} seconds remaining\n"
     await message.reply_text(response)
-
+    
 @Bot.on_message(filters.private & filters.command('broadcast') & filters.user(ADMINS))
 async def send_text(client: Bot, message: Message):
     if message.reply_to_message:
