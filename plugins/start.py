@@ -46,14 +46,16 @@ async def start_command(client: Client, message: Message):
                 is_premium, remaining_time = await is_premium_user(id)
                 current_time = int(time.time())
                 if is_premium:
-                    await message.reply_text("You are Premium user")
+                    await message.reply_text("𝐘𝐨𝐮 𝐚𝐫𝐞 𝐚 𝐏𝐫𝐞𝐦𝐢𝐮𝐦 𝐔𝐬𝐞𝐫 🥰")
                 else:
                     # Check if user was previously premium (has an expired entry)
                     user_doc = premium_users.find_one({'_id': id})
                     if user_doc and 'expiration_time' in user_doc and user_doc['expiration_time'] <= current_time:
-                        await message.reply_text("Your Premium Expired")
+                        await message.reply_text(f"ʏᴏᴜʀ ᴘʀᴇᴍɪᴜᴍ ᴇxᴘɪʀᴇᴅ 🥲" 
+                                                 f"𝐂𝐨𝐧𝐭𝐚𝐜𝐭 𝐟𝐨𝐫 𝐛𝐮𝐲 𝐚𝐠𝐚𝐢𝐧 - ")
                     else:
-                        await message.reply_text("You are not a premium user")
+                        await message.reply_text(f"<b>𝐘𝐨𝐮 𝐚𝐫𝐞 𝐧𝐨𝐭 𝐚 𝐩𝐫𝐞𝐦𝐢𝐮𝐦 𝐮𝐬𝐞𝐫 🥺</b>"
+                                                 f"Contact for buy")
                     return
                 try:
                     f_msg_id, s_msg_id = await decode_link(base64_string)
