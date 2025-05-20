@@ -8,7 +8,7 @@ import time
 from bot import Bot
 from config import ADMINS, OWNER_ID, FORCE_MSG, START_MSG, CUSTOM_CAPTION, DISABLE_CHANNEL_BUTTON, PROTECT_CONTENT
 from helper_func import subscribed, encode, decode, get_messages, encode_link, decode_link
-from database.database import add_user, del_user, full_userbase, present_users, is_premium_user, add_premium_user, add_all_premium, remove_premium_user, list_premium_users
+from database.database import add_user, del_user, full_userbase, present_user, premium_users, is_premium_user, add_premium_user, add_all_premium, remove_premium_user, list_premium_users
 
 
 
