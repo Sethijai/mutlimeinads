@@ -34,7 +34,7 @@ from database.database import *
 #
 # All rights reserved.
 #
-db = Database()
+
 #Request force sub mode commad,,,,,,
 @Bot.on_message(filters.command('fsub_mode') & filters.private & filters.user(ADMINS))
 async def change_force_sub_mode(client: Client, message: Message):
