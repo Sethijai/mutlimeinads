@@ -1,7 +1,7 @@
 https://codeload.github.com/KurimuzonAkuma/pyrogram/zip/refs/heads/dev
-pyrofork==2.3.61
+
 TgCrypto
-pyromod==1.5
+pyrogram
 schedule
 APscheduler
 # --- For-Database ------------ #
