@@ -9,9 +9,10 @@ from pyrogram.enums import ChatMemberStatus
 from config import *
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.errors import FloodWait
+from database.database import *
 
 
-async def is_subscribed(client, user_id):
+async def is_subscribed(user_id):
     channel_ids = await db.show_channels()
 
     if not channel_ids:
@@ -45,7 +46,7 @@ async def is_subscribed(client, user_id):
 # All rights reserved.
 #
 
-async def is_sub(client, user_id, channel_id):
+async def is_sub(user_id, channel_id):
     try:
         member = await client.get_chat_member(channel_id, user_id)
         status = member.status
