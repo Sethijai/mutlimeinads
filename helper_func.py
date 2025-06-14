@@ -6,64 +6,68 @@ import asyncio
 from typing import Tuple
 from pyrogram import filters
 from pyrogram.enums import ChatMemberStatus
-from config import FORCE_SUB_CHANNEL, FORCE_SUB_CHANNEL2, ADMINS
+from config import *
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.errors import FloodWait
 
 
-async def is_subscribed(filter, client, update):
-    if not FORCE_SUB_CHANNEL:
+async def is_subscribed(client, user_id):
+    channel_ids = await db.show_channels()
+
+    if not channel_ids:
         return True
-    user_id = update.from_user.id
-    if user_id in ADMINS:
+
+    if user_id == OWNER_ID:
         return True
+
+    for cid in channel_ids:
+        if not await is_sub(client, user_id, cid):
+            # Retry once if join request might be processing
+            mode = await db.get_channel_mode(cid)
+            if mode == "on":
+                await asyncio.sleep(2)  # give time for @on_chat_join_request to process
+                if await is_sub(client, user_id, cid):
+                    continue
+            return False
+
+    return True
+
+
+# Don't Remove Credit @CodeFlix_Bots, @rohit_1888
+# Ask Doubt on telegram @CodeflixSupport
+#
+# Copyright (C) 2025 by Codeflix-Bots@Github, < https://github.com/Codeflix-Bots >.
+#
+# This file is part of < https://github.com/Codeflix-Bots/FileStore > project,
+# and is released under the MIT License.
+# Please see < https://github.com/Codeflix-Bots/FileStore/blob/master/LICENSE >
+#
+# All rights reserved.
+#
+
+async def is_sub(client, user_id, channel_id):
     try:
-        member = await client.get_chat_member(chat_id = FORCE_SUB_CHANNEL, user_id = user_id)
+        member = await client.get_chat_member(channel_id, user_id)
+        status = member.status
+        #print(f"[SUB] User {user_id} in {channel_id} with status {status}")
+        return status in {
+            ChatMemberStatus.OWNER,
+            ChatMemberStatus.ADMINISTRATOR,
+            ChatMemberStatus.MEMBER
+        }
+
     except UserNotParticipant:
+        mode = await db.get_channel_mode(channel_id)
+        if mode == "on":
+            exists = await db.req_user_exist(channel_id, user_id)
+            #print(f"[REQ] User {user_id} join request for {channel_id}: {exists}")
+            return exists
+        #print(f"[NOT SUB] User {user_id} not in {channel_id} and mode != on")
         return False
 
-    if not member.status in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.MEMBER]:
+    except Exception as e:
+        print(f"[!] Error in is_sub(): {e}")
         return False
-    else:
-        return True
-
-async def is_subscribed(filter, client, update):
-    if not FORCE_SUB_CHANNEL2:
-        return True
-    user_id = update.from_user.id
-    if user_id in ADMINS:
-        return True
-    try:
-        member = await client.get_chat_member(chat_id = FORCE_SUB_CHANNEL2, user_id = user_id)
-    except UserNotParticipant:
-        return False
-
-    if not member.status in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.MEMBER]:
-        return False
-    else:
-        return True
-
-async def is_subscribed(filter, client, update):
-    if not FORCE_SUB_CHANNEL:
-        return True
-    if not FORCE_SUB_CHANNEL2:
-        return True
-    user_id = update.from_user.id
-    if user_id in ADMINS:
-        return True
-    try:
-        member = await client.get_chat_member(chat_id = FORCE_SUB_CHANNEL, user_id = user_id)
-    except UserNotParticipant:
-        return False
-
-    if not member.status in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.MEMBER]:
-        return False
-    try:
-        member = await client.get_chat_member(chat_id = FORCE_SUB_CHANNEL2, user_id = user_id)
-    except UserNotParticipant:
-        return False
-    else:
-        return True
         
 async def encode(string: str) -> str:
     """
