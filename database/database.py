@@ -5,7 +5,7 @@ from config import *
 
 dbclient = pymongo.MongoClient(DB_URI)
 database = dbclient[DB_NAME]
-
+db = database
 user_data = database['users']
 premium_users = database['premiumusers']
 channel_data = database[f'channels{TG_BOT_TOKEN}']
