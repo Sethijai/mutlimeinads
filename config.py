@@ -44,7 +44,8 @@ WEBSITE_URL_MODE = os.environ.get("WEBSITE_URL_MODE", "True")
 WEBSITE_URL = os.environ.get("WEBSITE_URL", "https://hackheistop1.blogspot.com/2024/12/1st-try.html")
 
 
-
+FSUB_LINK_EXPIRY = int(os.getenv("FSUB_LINK_EXPIRY", "0"))  # 0 means no expiry
+FORCE_PIC = os.environ.get("FORCE_PIC", "https://i.ibb.co/PV7wZVd/x.jpg")
 #start message
 START_MSG = os.environ.get("START_MESSAGE", "<b>ʙᴀᴋᴋᴀᴀᴀ!! {first}\n\n ɪ ᴀᴍ ғɪʟᴇ sᴛᴏʀᴇ ʙᴏᴛ, ɪ ᴄᴀɴ sᴛᴏʀᴇ ᴘʀɪᴠᴀᴛᴇ ғɪʟᴇs ɪɴ sᴘᴇᴄɪғɪᴇᴅ ᴄʜᴀɴɴᴇʟ ᴀɴᴅ ᴏᴛʜᴇʀ ᴜsᴇʀs ᴄᴀɴ ᴀᴄᴄᴇss ɪᴛ ғʀᴏᴍ sᴘᴇᴄɪᴀʟ ʟɪɴᴋ.</b>")
 try:
