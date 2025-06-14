@@ -36,7 +36,7 @@ from database.database import *
 #
 
 #Request force sub mode commad,,,,,,
-@Bot.on_message(filters.command('fsub_mode') & filters.private & admin)
+@Bot.on_message(filters.command('fsub_mode') & filters.private & filters.user(ADMINS))
 async def change_force_sub_mode(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     channels = await db.show_channels()
@@ -111,7 +111,7 @@ async def handle_join_request(client, chat_join_request):
 #
 
 # Add channel
-@Bot.on_message(filters.command('addchnl') & filters.private & admin)
+@Bot.on_message(filters.command('addchnl') & filters.private & filters.user(ADMINS))
 async def add_force_sub(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     args = message.text.split(maxsplit=1)
@@ -178,7 +178,7 @@ async def add_force_sub(client: Client, message: Message):
 #
 
 # Delete channel
-@Bot.on_message(filters.command('delchnl') & filters.private & admin)
+@Bot.on_message(filters.command('delchnl') & filters.private & filters.user(ADMINS))
 async def del_force_sub(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     args = message.text.split(maxsplit=1)
@@ -206,7 +206,7 @@ async def del_force_sub(client: Client, message: Message):
         return await temp.edit(f"<b>❌ Channel not found in force-sub list:</b> <code>{ch_id}</code>")
 
 # View all channels
-@Bot.on_message(filters.command('listchnl') & filters.private & admin)
+@Bot.on_message(filters.command('listchnl') & filters.private & filters.user(ADMINS))
 async def list_force_sub_channels(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     channels = await db.show_channels()
