@@ -1,5 +1,5 @@
 https://codeload.github.com/KurimuzonAkuma/pyrogram/zip/refs/heads/dev
-
+pyromod==1.5
 TgCrypto
 pyrogram
 schedule
