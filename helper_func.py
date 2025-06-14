@@ -12,7 +12,12 @@ from pyrogram.errors import FloodWait
 from database.database import *
 
 
-async def is_subscribed(user_id):
+async def is_subscribed(client, update):
+    # Extract user_id from the update object
+    user_id = update.from_user.id if update.from_user else None
+    if not user_id:
+        return False  # Handle cases where user_id cannot be extracted
+
     channel_ids = await db.show_channels()
 
     if not channel_ids:
@@ -32,7 +37,6 @@ async def is_subscribed(user_id):
             return False
 
     return True
-
 
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888
 # Ask Doubt on telegram @CodeflixSupport
