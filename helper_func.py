@@ -13,29 +13,22 @@ from database.database import *
 
 
 async def is_subscribed(client, update):
-    # Extract user_id from the update object
     user_id = update.from_user.id if update.from_user else None
     if not user_id:
-        return False  # Handle cases where user_id cannot be extracted
-
+        return False
     channel_ids = await db.show_channels()
-
     if not channel_ids:
         return True
-
     if user_id == OWNER_ID:
         return True
-
     for cid in channel_ids:
         if not await is_sub(client, user_id, cid):
-            # Retry once if join request might be processing
             mode = await db.get_channel_mode(cid)
             if mode == "on":
-                await asyncio.sleep(2)  # give time for @on_chat_join_request to process
+                await asyncio.sleep(2)
                 if await is_sub(client, user_id, cid):
                     continue
             return False
-
     return True
 
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888
