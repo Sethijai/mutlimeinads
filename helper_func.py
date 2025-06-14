@@ -50,7 +50,7 @@ async def is_subscribed(client, update):
 # All rights reserved.
 #
 
-async def is_sub(user_id, channel_id):
+async def is_sub(client, user_id, channel_id):
     try:
         member = await client.get_chat_member(channel_id, user_id)
         status = member.status
