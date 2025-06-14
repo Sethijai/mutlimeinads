@@ -200,3 +200,5 @@ async def reqChannel_exist(channel_id: int):
     else:
             #print(f"Channel {channel_id} NOT found in the database.")
         return False
+
+db = Database(DB_URI, DB_NAME, TG_BOT_TOKEN)
