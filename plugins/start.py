@@ -132,7 +132,7 @@ async def start_command(client: Client, message: Message):
 
         
         # Schedule auto-deletion
-        asyncio.create_task(delete_files(codeflix_msgs, client, message))
+        asyncio.create_task(delete_files(codeflix_msgs, client, message, k))
         return
 
     else:
