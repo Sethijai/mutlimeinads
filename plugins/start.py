@@ -155,7 +155,7 @@ async def start_command(client: Client, message: Message):
 
         
         # Schedule auto-deletion
-        asyncio.create_task(delete_files(codeflix_msgs, client, special_copied_msg, message, k))
+        asyncio.create_task(delete_files(codeflix_msgs, client, special_copied_msg, message, k, random_msg_id))
         return
 
     else:
@@ -272,7 +272,7 @@ async def send_text(client: Bot, message: Message):
         await msg.delete()
 
 # Function to handle file deletion
-async def delete_files(messages, client, k):
+async def delete_files(codeflix_msgs, client, special_copied_msg, message, k, random_msg_id):
     await asyncio.sleep(FILE_AUTO_DELETE)  # Wait for the duration specified in config.py
     
     for msg in messages:
