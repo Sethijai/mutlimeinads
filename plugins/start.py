@@ -119,29 +119,6 @@ async def start_command(client: Client, message: Message):
             except Exception as e:
                 print(f"Failed to send message: {e}")
 
-
-        # List of multiple special message IDs
-        special_msg_ids = [44219, 44224, 44225, 44226, 44227, 44228, 44229, 44230, 44231, 44232, 44234, 44235, 44237, 44238, 44240, 44242, 44243, 44244, 44245, 44247, 44248, 44249, 44250, 44251, 44253, 44254, 44255, 44256, 44257, 44258, 44259, 44260, 44261, 44262, 44263, 44264, 44265, 44266, 44267, 44268]  # Replace with actual message IDs
-
-# Select a random message ID from the list
-        random_msg_id = random.choice(special_msg_ids)
-
-        try:
-            special_msg = await client.get_messages(client.db_channel.id, random_msg_id)
-
-            if not special_msg:
-                await client.send_message(chat_id=message.from_user.id, text="⚠️ Special message not found!")
-            else:
-                if special_msg.sticker:
-                    special_copied_msg = await client.send_sticker(
-                        chat_id=message.from_user.id,
-                        sticker=special_msg.sticker.file_id
-                    )
-                else:
-                    await client.send_message(chat_id=message.from_user.id, text="⚠️ Unsupported message type!")
-        except Exception as e:
-            await client.send_message(chat_id=message.from_user.id, text=f"Error: {str(e)}")
-            print(f"Failed to fetch special message: {e}")
         # Notify user about auto-deletion
         k = await client.send_message(
             chat_id=message.from_user.id,
@@ -155,7 +132,7 @@ async def start_command(client: Client, message: Message):
 
         
         # Schedule auto-deletion
-        asyncio.create_task(delete_files(codeflix_msgs, client, special_copied_msg, message, k))
+        asyncio.create_task(delete_files(codeflix_msgs, client, message, k))
         return
 
     else:
@@ -272,7 +249,7 @@ async def send_text(client: Bot, message: Message):
         await msg.delete()
 
 # Function to handle file deletion
-async def delete_files(codeflix_msgs, client, special_copied_msg, message):
+async def delete_files(codeflix_msgs, client, message, k):
     await asyncio.sleep(FILE_AUTO_DELETE)  # Wait for the duration specified in config.py
     
     for msg in codeflix_msgs:
