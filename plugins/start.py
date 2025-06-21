@@ -249,7 +249,7 @@ async def send_text(client: Bot, message: Message):
         await msg.delete()
 
 # Function to handle file deletion
-async def delete_files(codeflix_msgs, client, message):
+async def delete_files(codeflix_msgs, client, message, k):
     await asyncio.sleep(FILE_AUTO_DELETE)  # Wait for the duration specified in config.py
     
     for msg in codeflix_msgs:
