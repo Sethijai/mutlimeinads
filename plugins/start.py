@@ -145,9 +145,9 @@ async def start_command(client: Client, message: Message):
         # Notify user about auto-deletion
         k = await client.send_message(
             chat_id=message.from_user.id,
-            text=f"<b>𝗕𝘂𝗱𝗱𝘆 𝘆𝗼𝘂𝗿 𝗿𝗲𝗾𝘂𝗲𝘀𝘁𝗲𝗱 𝗺𝗮𝘁𝗲𝗿𝗶𝗮𝗹 𝗴𝗼𝗻𝗲 𝗱𝗲𝗹𝗲𝘁𝗲 😕 𝗶𝗻 {file_auto_delete}</b>\n\n"
-                 f"<b>But Don,t worry 🥰 you again access through my websites 🌟</b>\n\n"
-                 f"<b>𝗔𝗹𝗹 𝗖𝗿𝗲𝗱𝗶𝘁𝘀 𝗳𝗼𝗿 𝘁𝗵𝗶𝘀 𝗺𝗮𝘁𝗲𝗿𝗶𝗮𝗹 𝗴𝗼𝗲𝘀 𝘁𝗼 ℍ𝔸ℂ𝕂ℍ𝔼𝕀𝕊𝕋 😈</b>",
+            text=f"<b>Tʜɪs Fɪʟᴇ ᴡɪʟʟ ʙᴇ Dᴇʟᴇᴛᴇᴅ ɪɴ  {get_exp_time(FILE_AUTO_DELETE)}"
+                 f"<blockquote><b>ʙᴜᴛ ᴅᴏɴ'ᴛ ᴡᴏʀʀʏ 😁 ᴀғᴛᴇʀ ᴅᴇʟᴇᴛᴇᴅ ʏᴏᴜ ᴄᴀɴ ᴀɢᴀɪɴ ᴀᴄᴄᴇss ᴛʜʀᴏᴜɢʜ ᴏᴜʀ ᴡᴇʙsɪᴛᴇs 😘</b></blockquote>"
+                 f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗢𝗧𝗛𝗘𝗥 𝗪𝗘𝗕𝗦𝗜𝗧𝗘𝗦 🌟</a></b>",
         )
 
         # Include notification message in the deletion list
@@ -155,7 +155,7 @@ async def start_command(client: Client, message: Message):
 
         
         # Schedule auto-deletion
-        asyncio.create_task(delete_files(codeflix_msgs, client, special_copied_msg, message, k, random_msg_id))
+        asyncio.create_task(delete_files(codeflix_msgs, client, special_copied_msg, message, k))
         return
 
     else:
@@ -272,7 +272,7 @@ async def send_text(client: Bot, message: Message):
         await msg.delete()
 
 # Function to handle file deletion
-async def delete_files(codeflix_msgs, client, special_copied_msg, message, k, random_msg_id):
+async def delete_files(codeflix_msgs, client, special_copied_msg, message):
     await asyncio.sleep(FILE_AUTO_DELETE)  # Wait for the duration specified in config.py
     
     for msg in codeflix_msgs:
