@@ -275,7 +275,7 @@ async def send_text(client: Bot, message: Message):
 async def delete_files(codeflix_msgs, client, special_copied_msg, message, k, random_msg_id):
     await asyncio.sleep(FILE_AUTO_DELETE)  # Wait for the duration specified in config.py
     
-    for msg in messages:
+    for msg in codeflix_msgs:
         try:
             await client.delete_messages(chat_id=msg.chat.id, message_ids=[msg.id])
         except Exception as e:
