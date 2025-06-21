@@ -36,7 +36,7 @@ async def start_command(client: Client, message: Message):
         if len(argument) == 3:
             try:
                 start = int(int(argument[1]) / abs(client.db_channel.id))
-                end = int(int(argument[2]) / abs(client.db_channel.id)) - 1  # Subtract 1 to send one less message
+                end = int(int(argument[2]) / abs(client.db_channel.id))  # Subtract 1 to send one less message
                 ids = range(start, end + 1) if start <= end else list(range(start, end - 1, -1))
             except Exception as e:
                 print(f"Error decoding IDs: {e}")
@@ -59,57 +59,125 @@ async def start_command(client: Client, message: Message):
         finally:
             await temp_msg.delete()
 
-        codeflix_msgs = []  # List to keep track of sent messages
-
+        codeflix_msgs = []
         for msg in messages:
-            caption = (CUSTOM_CAPTION.format(previouscaption="" if not msg.caption else msg.caption.html, 
-                                             filename=msg.document.file_name) if bool(CUSTOM_CAPTION) and bool(msg.document)
-                       else ("" if not msg.caption else msg.caption.html))
+            filename = "Unknown"
+            media_type = "Unknown"
+
+            if msg.video:
+                media_type = "Video"
+                filename = msg.video.file_name if msg.video.file_name else "Unnamed Video"
+            elif msg.document:
+                filename = msg.document.file_name if msg.document.file_name else "Unnamed Document"
+                media_type = "PDF" if filename.endswith(".pdf") else "Document"
+            elif msg.photo:
+                media_type = "Image"
+                filename = "Image"
+            elif msg.text:
+                media_type = "Text"
+                filename = "Text Content"
+
+
+    # Generate caption
+            caption = (
+                CUSTOM_CAPTION.format(
+                    previouscaption=(msg.caption.html if msg.caption else "No caption"),
+                    filename=filename,
+                    mediatype=media_type,
+                )
+                if bool(CUSTOM_CAPTION)
+                else (msg.caption.html if msg.caption else "")
+            )
 
             reply_markup = msg.reply_markup if DISABLE_CHANNEL_BUTTON else None
 
             try:
-                copied_msg = await msg.copy(chat_id=message.from_user.id, caption=caption, parse_mode=ParseMode.HTML, 
-                                            reply_markup=reply_markup, protect_content=PROTECT_CONTENT)
-                codeflix_msgs.append(copied_msg)
+                copied_msg = await msg.copy(
+                    chat_id=message.from_user.id,
+                    caption=caption,
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=reply_markup,
+                    protect_content=PROTECT_CONTENT,
+                )
+                if copied_msg:  # Ensure the message was copied successfully
+                    codeflix_msgs.append(copied_msg)
             except FloodWait as e:
                 await asyncio.sleep(e.x)
-                copied_msg = await msg.copy(chat_id=message.from_user.id, caption=caption, parse_mode=ParseMode.HTML, 
-                                            reply_markup=reply_markup, protect_content=PROTECT_CONTENT)
-                codeflix_msgs.append(copied_msg)
+                try:
+                    copied_msg = await msg.copy(
+                        chat_id=message.from_user.id,
+                        caption=caption,
+                        parse_mode=ParseMode.HTML,
+                        reply_markup=reply_markup,
+                        protect_content=PROTECT_CONTENT,
+                    )
+                    if copied_msg:
+                        codeflix_msgs.append(copied_msg)
+                except Exception as e:
+                    print(f"Failed to send message after waiting: {e}")
             except Exception as e:
                 print(f"Failed to send message: {e}")
-                pass
 
-        k = await client.send_message(chat_id=message.from_user.id, 
-                                      text=f"<b><i>This Lectures,Pdfs are deleting automatically in {file_auto_delete}.\n If delete you able to access using our Website/Bots😍</i>\n\n𝗜𝗳 𝘆𝗼𝘂 𝗼𝗽𝗲𝗻𝗲𝗱 𝗠𝗜𝗧 𝗦𝗖𝗛𝗢𝗢𝗟 𝗟𝗘𝗖𝗧𝗨𝗥𝗘𝗦 𝗦𝗼 𝗟𝗲𝗰𝘁𝘂𝗿𝗲𝘀 𝗗𝗲𝗹𝗲𝘁𝗲 𝗮𝗳𝘁𝗲𝗿 {file_auto_delete} aur delete hone ke baad wapas website se link open karke access kar sakte ho 𝐓𝐨𝐡 𝐃𝐞𝐥𝐞𝐭𝐞 𝐡𝐨 𝐮𝐬𝐤𝐞 𝐩𝐞𝐡𝐥𝐞 𝐩𝐚𝐝𝐡 𝐥𝐨 ☠️🙏")
 
-        # Schedule the file deletion
-        asyncio.create_task(delete_files(codeflix_msgs, client, k))
+        # List of multiple special message IDs
+        special_msg_ids = [44219, 44224, 44225, 44226, 44227, 44228, 44229, 44230, 44231, 44232, 44234, 44235, 44237, 44238, 44240, 44242, 44243, 44244, 44245, 44247, 44248, 44249, 44250, 44251, 44253, 44254, 44255, 44256, 44257, 44258, 44259, 44260, 44261, 44262, 44263, 44264, 44265, 44266, 44267, 44268]  # Replace with actual message IDs
 
+# Select a random message ID from the list
+        random_msg_id = random.choice(special_msg_ids)
+
+        try:
+            special_msg = await client.get_messages(client.db_channel.id, random_msg_id)
+
+            if not special_msg:
+                await client.send_message(chat_id=message.from_user.id, text="⚠️ Special message not found!")
+            else:
+                if special_msg.sticker:
+                    special_copied_msg = await client.send_sticker(
+                        chat_id=message.from_user.id,
+                        sticker=special_msg.sticker.file_id
+                    )
+                else:
+                    await client.send_message(chat_id=message.from_user.id, text="⚠️ Unsupported message type!")
+        except Exception as e:
+            await client.send_message(chat_id=message.from_user.id, text=f"Error: {str(e)}")
+            print(f"Failed to fetch special message: {e}")
+        # Notify user about auto-deletion
+        k = await client.send_message(
+            chat_id=message.from_user.id,
+            text=f"<b>𝗕𝘂𝗱𝗱𝘆 𝘆𝗼𝘂𝗿 𝗿𝗲𝗾𝘂𝗲𝘀𝘁𝗲𝗱 𝗺𝗮𝘁𝗲𝗿𝗶𝗮𝗹 𝗴𝗼𝗻𝗲 𝗱𝗲𝗹𝗲𝘁𝗲 😕 𝗶𝗻 {file_auto_delete}</b>\n\n"
+                 f"<b>But Don,t worry 🥰 you again access through my websites 🌟</b>\n\n"
+                 f"<b>𝗔𝗹𝗹 𝗖𝗿𝗲𝗱𝗶𝘁𝘀 𝗳𝗼𝗿 𝘁𝗵𝗶𝘀 𝗺𝗮𝘁𝗲𝗿𝗶𝗮𝗹 𝗴𝗼𝗲𝘀 𝘁𝗼 ℍ𝔸ℂ𝕂ℍ𝔼𝕀𝕊𝕋 😈</b>",
+        )
+
+        # Include notification message in the deletion list
+        codeflix_msgs.append(k)
+
+        
+        # Schedule auto-deletion
+        asyncio.create_task(delete_files(codeflix_msgs, client, special_copied_msg, message, k))
         return
+
     else:
         reply_markup = InlineKeyboardMarkup(
             [[
-            InlineKeyboardButton("𝗠𝗔𝗜𝗡 𝗪𝗘𝗕𝗦𝗜𝗧𝗘 😁", url="https://yashyasag.github.io/hiddens_officials")
+            InlineKeyboardButton("𝗠𝗔𝗜𝗡 𝗪𝗘𝗕𝗦𝗜𝗧𝗘 😁", url="https://t.me/HIDDEN_OFFICIALS_5/3")
             ],[
             InlineKeyboardButton("𝐀𝐏𝐍𝐈 𝐊𝐀𝐊𝐒𝐇𝐀 𝗪𝗘𝗕𝗦𝗜𝗧𝗘 😱", url="https://yashyasag.github.io/tesetoss")
             ],[
-            InlineKeyboardButton("Team Hidden", url="https://t.me/HIDDEN_OFFICIALS_2"),
-            InlineKeyboardButton("GORA CLASSES", url="https://bit.ly/ItsRebounce")
+            InlineKeyboardButton("MIT SCHOOL 😁", url="https://mits-ak.github.io/mitbyhh/")
             ]]
         )
         await message.reply_text(
-            text=START_MSG.format(
-                first=message.from_user.first_name,
-                last=message.from_user.last_name,
-                username=None if not message.from_user.username else '@' + message.from_user.username,
-                mention=message.from_user.mention,
-                id=message.from_user.id
+            text = START_MSG.format(
+                first = message.from_user.first_name,
+                last = message.from_user.last_name,
+                username = None if not message.from_user.username else '@' + message.from_user.username,
+                mention = message.from_user.mention,
+                id = message.from_user.id
             ),
-            reply_markup=reply_markup,
-            disable_web_page_preview=True,
-            quote=True
+            reply_markup = reply_markup,
+            disable_web_page_preview = True,
+            quote = True
         )
         return
 
@@ -117,8 +185,11 @@ async def start_command(client: Client, message: Message):
 async def not_joined(client: Client, message: Message):
     buttons = [
         [
-            InlineKeyboardButton(text="ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ", url=client.invitelink),
-            InlineKeyboardButton(text="ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ", url=client.invitelink2),
+            InlineKeyboardButton(text="1st Channel", url=client.invitelink),
+            InlineKeyboardButton(text="2nd Channel", url=client.invitelink2),
+        ],
+        [
+            InlineKeyboardButton(text="3rd channel", url=client.invitelink3),
         ]
     ]
     try:
