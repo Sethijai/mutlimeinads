@@ -45,7 +45,7 @@ FILE_AUTO_DELETE = int(os.getenv("FILE_AUTO_DELETE", "86400")) # auto delete in 
 
 #start message
 START_MSG = os.environ.get("START_MESSAGE", "<b>ʜᴇʟʟᴏ {first}\n\n<blockquote> ɪ ᴀᴍ ʟᴇᴄᴛᴜʀᴇ ᴘʀᴏᴠɪᴅᴇʀ ʙᴏᴛ, ɪ ᴄᴀɴ ᴘʀᴏᴠɪᴅᴇ ᴀʟʟ ʟᴇᴄᴛᴜʀᴇs 😈 ᴀɴᴅ ᴘᴅғs 😁</blockquote></b>")
-FORCE_MSG = os.environ.get("FORCE_SUB_MESSAGE", "ʜᴇʟʟᴏ {first}\n\n<b>💝 𝗜𝗳 𝗬𝗼𝘂 𝗮𝗿𝗲 𝗻𝗲𝘄 𝗼𝗻 𝗼𝘂𝗿 𝗯𝗼𝘁 𝘁𝗵𝗲𝗻 𝘆𝗼𝘂 𝗵𝗮𝘃𝗲 𝘁𝗼 𝗱𝗼 𝘁𝗵𝗶𝘀 𝗼𝗻𝗹𝘆 𝟭𝘀𝘁 𝘁𝗶𝗺𝗲 🥰</b>\n<b>1. Join our all channels by below buttons.</b>\n2.Like Join 1st & Join 2nd & Join 3rd.</b>\n3.After Joined all channels click on ♻️Try Again♻️ Button and Enjoy 👻</b>")
+FORCE_MSG = os.environ.get("FORCE_SUB_MESSAGE", "ʜᴇʟʟᴏ {first}\n\n<b>💝 𝗜𝗳 𝗬𝗼𝘂 𝗮𝗿𝗲 𝗻𝗲𝘄 𝗼𝗻 𝗼𝘂𝗿 𝗯𝗼𝘁 𝘁𝗵𝗲𝗻 𝘆𝗼𝘂 𝗵𝗮𝘃𝗲 𝘁𝗼 𝗱𝗼 𝘁𝗵𝗶𝘀 𝗼𝗻𝗹𝘆 𝟭𝘀𝘁 𝘁𝗶𝗺𝗲 🥰</b>\n\n<b>1. Join our all channels by below buttons.</b>\n<b>2.Like Join 1st & Join 2nd & Join 3rd.</b>\n<b>3.After Joined all channels click on ♻️Try Again♻️ Button and Enjoy 👻</b>")
 
 CMD_TXT = "<blockquote><b>HACKHEIST</b></blockquote>"
 #--------------------------------------------
