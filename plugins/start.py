@@ -82,7 +82,7 @@ async def start_command(client: Client, message: Message):
     # Generate caption
             caption = (
                 CUSTOM_CAPTION.format(
-                    previouscaption=(msg.caption.html if msg.caption else "No caption"),
+                    previouscaption=(msg.caption.html if msg.caption else "🔥 𝐇𝐈𝐃𝐃𝐄𝐍𝐒 🔥"),
                     filename=filename,
                     mediatype=media_type,
                 )
@@ -142,7 +142,7 @@ async def start_command(client: Client, message: Message):
             ],[
             InlineKeyboardButton("‼️ 𝗕𝗔𝗖𝗞𝗨𝗣 𝗖𝗛𝗔𝗡𝗡𝗘𝗟 ‼️", url="https://t.me/+Sk3pfX_PWTQ3NmI1")
             ],[
-            InlineKeyboardButton("👻 ᴄᴏɴᴛᴀᴄᴛ ᴜs 👻", url="https://t.me/HACKHEISTBOT")
+            InlineKeyboardButton("👻 ᴄᴏɴᴛᴀᴄᴛ ᴜs 👻", url="https://t.me/TEAM_HIDDENS_BOT")
             ]]
         )
         await message.reply_text(
