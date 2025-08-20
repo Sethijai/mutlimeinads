@@ -33,10 +33,10 @@ async def start_command(client: Client, message: Message):
         # Check if it's a "get-" request for individual access
         try:
             string = await decode_new(base64_string)
-            if string.startswith("get-"):
+            if string.startswith("HACKHEIST-"):
                 argument = string.split("-")
                 
-                if len(argument) == 3 and argument[0] == "get":
+                if len(argument) == 3 and argument[0] == "HACKHEIST":
                     try:
                         user_id = int(argument[1])
                         original_msg_id = int(argument[2])
@@ -193,7 +193,7 @@ async def start_command(client: Client, message: Message):
             )
 
             # Create individual access button and add it to existing reply_markup
-            base64_string2 = await encode_new(f"get-{user_id}-{msg.id * abs(client.db_channel.id)}")
+            base64_string2 = await encode_new(f"HACKHEIST-{user_id}-{msg.id * abs(client.db_channel.id)}")
             individual_button = InlineKeyboardButton("🔓 Individual Access", url=f"https://t.me/Jaddu2bot?start={base64_string2}")
 
             # Handle reply_markup - add individual button to existing markup or create new one
