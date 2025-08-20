@@ -31,92 +31,104 @@ async def start_command(client: Client, message: Message):
             return
 
         # Check if it's a "get-" request for individual access
-        if base64_string.startswith('get-'):
+        try:
             string = await decode_new(base64_string)
-            argument = string.split("-")
-            
-            if len(argument) == 3 and argument[0] == "get":
-                try:
-                    user_id = int(argument[1])
-                    msg_id = int(int(argument[2]) / abs(client.db_channel.id))
-                    
-                    # Check if the current user is authorized
-                    if message.from_user.id != user_id:
-                        await message.reply_text("❌ You are not authorized to access this content!")
-                        return
-                    
-                    temp_msg = await message.reply("𝗥𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
+            if string.startswith("get-"):
+                argument = string.split("-")
+                
+                if len(argument) == 3 and argument[0] == "get":
                     try:
-                        messages = await get_messages(client, [msg_id])
-                    except Exception as e:
-                        await message.reply_text("Something Went Wrong..!")
-                        print(f"Error getting messages: {e}")
-                        return
-                    finally:
-                        await temp_msg.delete()
-
-                    # Send the individual message with protect_content = False
-                    for msg in messages:
-                        filename = "Unknown"
-                        media_type = "Unknown"
-
-                        if msg.video:
-                            media_type = "Video"
-                            filename = msg.video.file_name if msg.video.file_name else "Unnamed Video"
-                        elif msg.document:
-                            filename = msg.document.file_name if msg.document.file_name else "Unnamed Document"
-                            media_type = "PDF" if filename.endswith(".pdf") else "Document"
-                        elif msg.photo:
-                            media_type = "Image"
-                            filename = "Image"
-                        elif msg.text:
-                            media_type = "Text"
-                            filename = "Text Content"
-
-                        # Generate caption
-                        caption = (
-                            CUSTOM_CAPTION.format(
-                                previouscaption=(msg.caption.html if msg.caption else "🔥 𝐇𝐈𝐃𝐃𝐄𝐍𝐒 🔥"),
-                                filename=filename,
-                                mediatype=media_type,
-                            )
-                            if bool(CUSTOM_CAPTION)
-                            else (msg.caption.html if msg.caption else "")
-                        )
-
-                        reply_markup = msg.reply_markup if DISABLE_CHANNEL_BUTTON else None
-
+                        user_id = int(argument[1])
+                        original_msg_id = int(argument[2])
+                        
+                        # Check if the current user is authorized
+                        if message.from_user.id != user_id:
+                            await message.reply_text("❌ You are not authorized to access this content!")
+                            return
+                        
+                        # Convert back to actual message ID
+                        msg_id = int(original_msg_id / abs(client.db_channel.id))
+                        
+                        temp_msg = await message.reply("𝗥𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
                         try:
-                            copied_msg = await msg.copy(
-                                chat_id=message.from_user.id,
-                                caption=caption,
-                                parse_mode=ParseMode.HTML,
-                                reply_markup=reply_markup,
-                                protect_content=False,  # Changed to False for individual access
-                            )
-                            
-                            # Notify user about auto-deletion for individual message
-                            k = await client.send_message(
-                                chat_id=message.from_user.id,
-                                text=f"<b>‼️ 𝐓𝐡𝐢𝐬 𝐋𝐄𝐂𝐓𝐔𝐑𝐄/𝐏𝐃𝐅 𝐀𝐮𝐭𝐨𝐦𝐚𝐭𝐢𝐜 𝐃𝐞𝐥𝐞𝐭𝐢𝐧𝐠 𝐢𝐧 𝟭𝟮 𝗛𝗼𝘂𝗿𝘀 🔥</b>\n\n"
-                                     f"<b>ʙᴜᴛ ᴅᴏɴ'ᴛ ᴡᴏʀʀʏ 😁 ᴀғᴛᴇʀ ᴅᴇʟᴇᴛᴇᴅ ʏᴏᴜ ᴄᴀɴ ᴀɢᴀɪɴ ᴀᴄᴄᴇss ᴛʜʀᴏᴜɢʜ ᴏᴜʀ ᴡᴇʙsɪᴛᴇs 😘</b>\n\n"
-                                     f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗢𝗧𝗛𝗘𝗥 𝗪𝗘𝗕𝗦𝗜𝗧𝗘𝗦 🌟</a></b>",
-                            )
-                            
-                            # Schedule auto-deletion for individual message
-                            asyncio.create_task(delete_files([copied_msg, k], client, message, k))
-                            
+                            messages = await get_messages(client, [msg_id])
                         except Exception as e:
-                            print(f"Failed to send individual message: {e}")
-                            await message.reply_text("Failed to send the content!")
-                    
-                    return
-                    
-                except Exception as e:
-                    print(f"Error in individual access: {e}")
-                    return
-            
-            return
+                            await message.reply_text("Something Went Wrong..!")
+                            print(f"Error getting messages: {e}")
+                            return
+                        finally:
+                            await temp_msg.delete()
+
+                        # Send the individual message with protect_content = False
+                        codeflix_msgs = []
+                        for msg in messages:
+                            filename = "Unknown"
+                            media_type = "Unknown"
+
+                            if msg.video:
+                                media_type = "Video"
+                                filename = msg.video.file_name if msg.video.file_name else "Unnamed Video"
+                            elif msg.document:
+                                filename = msg.document.file_name if msg.document.file_name else "Unnamed Document"
+                                media_type = "PDF" if filename.endswith(".pdf") else "Document"
+                            elif msg.photo:
+                                media_type = "Image"
+                                filename = "Image"
+                            elif msg.text:
+                                media_type = "Text"
+                                filename = "Text Content"
+
+                            # Generate caption
+                            caption = (
+                                CUSTOM_CAPTION.format(
+                                    previouscaption=(msg.caption.html if msg.caption else "🔥 𝐇𝐈𝐃𝐃𝐄𝐍𝐒 🔥"),
+                                    filename=filename,
+                                    mediatype=media_type,
+                                )
+                                if bool(CUSTOM_CAPTION)
+                                else (msg.caption.html if msg.caption else "")
+                            )
+
+                            reply_markup = msg.reply_markup if DISABLE_CHANNEL_BUTTON else None
+
+                            try:
+                                copied_msg = await msg.copy(
+                                    chat_id=message.from_user.id,
+                                    caption=caption,
+                                    parse_mode=ParseMode.HTML,
+                                    reply_markup=reply_markup,
+                                    protect_content=False,  # Changed to False for individual access
+                                )
+                                
+                                if copied_msg:
+                                    codeflix_msgs.append(copied_msg)
+                                    
+                            except Exception as e:
+                                print(f"Failed to send individual message: {e}")
+                                await message.reply_text("Failed to send the content!")
+                                return
+                        
+                        # Notify user about auto-deletion for individual message
+                        k = await client.send_message(
+                            chat_id=message.from_user.id,
+                            text=f"<b>‼️ 𝐓𝐡𝐢𝐬 𝐋𝐄𝐂𝐓𝐔𝐑𝐄/𝐏𝐃𝐅 𝐀𝐮𝐭𝐨𝐦𝐚𝐭𝐢𝐜 𝐃𝐞𝐥𝐞𝐭𝐢𝐧𝐠 𝐢𝐧 𝟭𝟮 𝗛𝗼𝘂𝗿𝘀 🔥</b>\n\n"
+                                 f"<b>ʙᴜᴛ ᴅᴏɴ'ᴛ ᴡᴏʀʀʏ 😁 ᴀғᴛᴇʀ ᴅᴇʟᴇᴛᴇᴅ ʏᴏᴜ ᴄᴀɴ ᴀɢᴀɪɴ ᴀᴄᴄᴇss ᴛʜʀᴏᴜɢʜ ᴏᴜʀ ᴡᴇʙsɪᴛᴇs 😘</b>\n\n"
+                                 f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗢𝗧𝗛𝗘𝗥 𝗪𝗘𝗕𝗦𝗜𝗧𝗘𝗦 🌟</a></b>",
+                        )
+                        
+                        codeflix_msgs.append(k)
+                        # Schedule auto-deletion for individual message
+                        asyncio.create_task(delete_files(codeflix_msgs, client, message, k))
+                        
+                        return
+                        
+                    except Exception as e:
+                        print(f"Error in individual access: {e}")
+                        # Fall through to normal processing if individual access fails
+                        pass
+        except:
+            # If decode_new fails, try normal decode
+            pass
 
         # Original bulk message handling
         string = await decode(base64_string)
@@ -126,7 +138,7 @@ async def start_command(client: Client, message: Message):
         if len(argument) == 3:
             try:
                 start = int(int(argument[1]) / abs(client.db_channel.id))
-                end = int(int(argument[2]) / abs(client.db_channel.id))  # Subtract 1 to send one less message
+                end = int(int(argument[2]) / abs(client.db_channel.id))
                 ids = range(start, end + 1) if start <= end else list(range(start, end - 1, -1))
             except Exception as e:
                 print(f"Error decoding IDs: {e}")
@@ -180,13 +192,24 @@ async def start_command(client: Client, message: Message):
                 else (msg.caption.html if msg.caption else "")
             )
 
-            # Create individual access button
+            # Create individual access button and add it to existing reply_markup
             base64_string2 = await encode_new(f"get-{user_id}-{msg.id * abs(client.db_channel.id)}")
-            individual_button = InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔓 Individual Access", url=f"https://t.me/Jaddu2bot?start={base64_string2}")]
-            ])
+            individual_button = InlineKeyboardButton("🔓 Individual Access", url=f"https://t.me/Jaddu2bot?start={base64_string2}")
 
-            reply_markup = msg.reply_markup if DISABLE_CHANNEL_BUTTON else None
+            # Handle reply_markup - add individual button to existing markup or create new one
+            if DISABLE_CHANNEL_BUTTON:
+                reply_markup = None
+            elif msg.reply_markup:
+                # Add the individual button to existing markup
+                if msg.reply_markup.inline_keyboard:
+                    new_keyboard = msg.reply_markup.inline_keyboard.copy()
+                    new_keyboard.append([individual_button])
+                    reply_markup = InlineKeyboardMarkup(new_keyboard)
+                else:
+                    reply_markup = InlineKeyboardMarkup([[individual_button]])
+            else:
+                # Create new markup with just the individual button
+                reply_markup = InlineKeyboardMarkup([[individual_button]])
 
             try:
                 copied_msg = await msg.copy(
@@ -196,18 +219,8 @@ async def start_command(client: Client, message: Message):
                     reply_markup=reply_markup,
                     protect_content=PROTECT_CONTENT,
                 )
-                
-                # Send the individual access button below the message
-                button_msg = await client.send_message(
-                    chat_id=message.from_user.id,
-                    text="👇 Click below for individual access:",
-                    reply_markup=individual_button
-                )
-                
                 if copied_msg:  # Ensure the message was copied successfully
                     codeflix_msgs.append(copied_msg)
-                    codeflix_msgs.append(button_msg)  # Add button message to deletion list
-                    
             except FloodWait as e:
                 await asyncio.sleep(e.x)
                 try:
@@ -218,17 +231,8 @@ async def start_command(client: Client, message: Message):
                         reply_markup=reply_markup,
                         protect_content=PROTECT_CONTENT,
                     )
-                    
-                    # Send the individual access button below the message
-                    button_msg = await client.send_message(
-                        chat_id=message.from_user.id,
-                        text="👇 Click below for individual access:",
-                        reply_markup=individual_button
-                    )
-                    
                     if copied_msg:
                         codeflix_msgs.append(copied_msg)
-                        codeflix_msgs.append(button_msg)
                 except Exception as e:
                     print(f"Failed to send message after waiting: {e}")
             except Exception as e:
@@ -245,6 +249,7 @@ async def start_command(client: Client, message: Message):
         # Include notification message in the deletion list
         codeflix_msgs.append(k)
 
+        
         # Schedule auto-deletion
         asyncio.create_task(delete_files(codeflix_msgs, client, message, k))
         return
