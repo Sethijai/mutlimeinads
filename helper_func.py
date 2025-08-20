@@ -127,15 +127,19 @@ async def decode(base64_string):
 async def encode_new(string):
     string_bytes = string.encode("ascii")
     base64_bytes = base64.urlsafe_b64encode(string_bytes)
-    base64_string = base64_bytes.decode("ascii").strip("=")
-    return base64_string
+    base64_string2 = (base64_bytes.decode("ascii")).strip("=")
+    return base64_string2
 
-async def decode_new(base64_string):
-    base64_string = base64_string.strip("=")
-    base64_bytes = (base64_string + "=" * (-len(base64_string) % 4)).encode("ascii")
-    string_bytes = base64.urlsafe_b64decode(base64_bytes)
-    string = string_bytes.decode("ascii")
-    return string
+async def decode_new(base64_string2):
+    try:
+        base64_string2 = base64_string2.strip("=")  # Handle any remaining padding
+        base64_bytes = (base64_string2 + "=" * (-len(base64_string2) % 4)).encode("ascii")
+        string_bytes = base64.urlsafe_b64decode(base64_bytes) 
+        string = string_bytes.decode("ascii")
+        return string
+    except Exception as e:
+        print(f"Decode_new error: {e}")
+        raise
 
 async def get_messages(client, message_ids):
     messages = []
