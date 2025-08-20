@@ -1,9 +1,11 @@
 import random
-import os, asyncio, humanize
+import os
+import asyncio
+import humanize
 import base64
 from pyrogram import Client, filters, __version__
 from pyrogram.enums import ParseMode
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated
 from bot import Bot
 from config import *
@@ -21,8 +23,7 @@ async def start_command(client: Client, message: Message):
             await add_user(id)
         except Exception as e:
             print(f"Error adding user: {e}")
-            pass
-    
+
     text = message.text
     if len(text) > 7:
         try:
@@ -32,14 +33,14 @@ async def start_command(client: Client, message: Message):
 
         string = await decode(base64_string)
         argument = string.split("-")
-        
+
         # Handle new format: get-{user_id}-{msg_id * abs(client.db_channel.id)}
         if len(argument) == 3 and argument[0] == "get":
             try:
                 user_id = int(argument[1])
                 encoded_msg_id = int(argument[2])
                 msg_id = int(encoded_msg_id / abs(client.db_channel.id))
-                
+
                 # Check if the user_id matches the message sender
                 if user_id != id:
                     await message.reply_text("This link is not for you!")
@@ -55,6 +56,7 @@ async def start_command(client: Client, message: Message):
                 finally:
                     await temp_msg.delete()
 
+                codeflix_msgs = []
                 for msg in messages:
                     filename = "Unknown"
                     media_type = "Unknown"
@@ -85,44 +87,47 @@ async def start_command(client: Client, message: Message):
                     reply_markup = msg.reply_markup if DISABLE_CHANNEL_BUTTON else None
 
                     try:
-                        await msg.copy(
+                        copied_msg = await msg.copy(
                             chat_id=message.from_user.id,
                             caption=caption,
                             parse_mode=ParseMode.HTML,
                             reply_markup=reply_markup,
-                            protect_content=False,  # Set to False for the button link
+                            protect_content=False,  # Set to False for button link
                         )
+                        if copied_msg:
+                            codeflix_msgs.append(copied_msg)
                     except FloodWait as e:
-                        await asyncio.sleep(e.x)
-                        await msg.copy(
+                        await asyncio.sleep(e.value)
+                        copied_msg = await msg.copy(
                             chat_id=message.from_user.id,
                             caption=caption,
                             parse_mode=ParseMode.HTML,
                             reply_markup=reply_markup,
                             protect_content=False,
                         )
+                        if copied_msg:
+                            codeflix_msgs.append(copied_msg)
                     except Exception as e:
                         print(f"Failed to send message: {e}")
+
+                # Schedule auto-deletion for messages sent via button link
+                asyncio.create_task(delete_files(codeflix_msgs, client, message))
                 return
 
         # Existing logic for range or single message IDs
         ids = []
-        if len(argument) == 3:
-            try:
+        try:
+            if len(argument) == 3:
                 start = int(int(argument[1]) / abs(client.db_channel.id))
                 end = int(int(argument[2]) / abs(client.db_channel.id))
                 ids = range(start, end + 1) if start <= end else list(range(start, end - 1, -1))
-            except Exception as e:
-                print(f"Error decoding IDs: {e}")
-                return
-        elif len(argument) == 2:
-            try:
+            elif len(argument) == 2:
                 ids = [int(int(argument[1]) / abs(client.db_channel.id))]
-            except Exception as e:
-                print(f"Error decoding ID: {e}")
-                return
+        except Exception as e:
+            print(f"Error decoding IDs: {e}")
+            return
 
-        temp_msg = await message.reply("�_R𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
+        temp_msg = await message.reply("𝗥𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
         try:
             messages = await get_messages(client, ids)
         except Exception as e:
@@ -164,7 +169,7 @@ async def start_command(client: Client, message: Message):
             base64_string2 = await encode(f"get-{id}-{msg.id * abs(client.db_channel.id)}")
             button_url = f"https://t.me/Jaddu2bot?start={base64_string2}"
             reply_markup = InlineKeyboardMarkup(
-                [[InlineKeyboardButton("🔗 𝐅𝐨𝐫 𝐅𝐨𝐫𝐰𝐚𝐫𝐝𝐢𝐧𝐠", url=button_url)]]
+                [[InlineKeyboardButton("🔗 Share Link", url=button_url)]]
             ) if DISABLE_CHANNEL_BUTTON else msg.reply_markup
 
             try:
@@ -178,14 +183,14 @@ async def start_command(client: Client, message: Message):
                 if copied_msg:
                     codeflix_msgs.append(copied_msg)
             except FloodWait as e:
-                await asyncio.sleep(e.x)
+                await asyncio.sleep(e.value)
                 copied_msg = await msg.copy(
                     chat_id=message.from_user.id,
                     caption=caption,
                     parse_mode=ParseMode.HTML,
                     reply_markup=reply_markup,
                     protect_content=PROTECT_CONTENT,
-)
+                )
                 if copied_msg:
                     codeflix_msgs.append(copied_msg)
             except Exception as e:
@@ -200,18 +205,16 @@ async def start_command(client: Client, message: Message):
         )
 
         codeflix_msgs.append(k)
-        asyncio.create_task(delete_files(codeflix_msgs, client, message, k))
+        asyncio.create_task(delete_files(codeflix_msgs, client, message))
         return
 
     else:
         reply_markup = InlineKeyboardMarkup(
-            [[
-                InlineKeyboardButton("🔥 𝗠𝗔𝗜𝗡 𝗪𝗘𝗕𝗦𝗜𝗧𝗘 🔥", url="https://yashyasag.github.io/hiddens_officials")
-            ],[
-                InlineKeyboardButton("‼️ 𝗕𝗔𝗖𝗞𝗨𝗣 𝗖𝗛𝗔𝗡𝗡𝗘𝗟 ‼️", url="https://t.me/+Sk3pfX_PWTQ3NmI1")
-            ],[
-                InlineKeyboardButton("👻 ᴄᴏɴᴛᴀᴄᴛ ᴜs 👻", url="https://t.me/TEAM_HIDDENS_BOT")
-            ]]
+            [
+                [InlineKeyboardButton("🔥 𝗠𝗔𝗜𝗡 𝗪𝗘𝗕𝗦𝗜𝗧𝗘 🔥", url="https://yashyasag.github.io/hiddens_officials")],
+                [InlineKeyboardButton("‼️ 𝗕𝗔𝗖𝗞𝗨𝗣 𝗖�_H𝗔𝗡𝗡𝗘𝗟 ‼️", url="https://t.me/+Sk3pfX_PWTQ3NmI1")],
+                [InlineKeyboardButton("👻 ᴄᴏɴᴛᴀᴄᴛ ᴜs 👻", url="https://t.me/TEAM_HIDDENS_BOT")]
+            ]
         )
         await message.reply_text(
             text=START_MSG.format(
@@ -225,21 +228,16 @@ async def start_command(client: Client, message: Message):
             disable_web_page_preview=True,
             quote=True
         )
-        return
 
 @Bot.on_message(filters.command('start') & filters.private)
 async def not_joined(client: Client, message: Message):
     buttons = [
+        [InlineKeyboardButton(text="😈 𝗢𝗣𝗠𝗔𝗦𝗧𝗘𝗥𝗦 💀", url=client.invitelink4)],
         [
-            InlineKeyboardButton(text="😈 𝗢𝗣𝗠𝗔𝗦𝗧𝗘𝗥𝗦 💀", url=client.invitelink4),
-        ],
-        [
-            InlineKeyboardButton(text="🌟 𝗝𝗼𝗶�_n 𝟭𝘀𝘁 🌟", url=client.invitelink),
+            InlineKeyboardButton(text="🌟 𝗝𝗼𝗶𝗻 𝟭𝘀𝘁 🌟", url=client.invitelink),
             InlineKeyboardButton(text="💝 𝗝𝗼𝗶𝗻 𝟮𝗻𝗱 💝", url=client.invitelink2),
         ],
-        [
-            InlineKeyboardButton(text="🕊 𝗝𝗼𝗶𝗻 𝟯𝗿𝗱 🕊", url=client.invitelink3),
-        ]        
+        [InlineKeyboardButton(text="🕊 𝗝𝗼𝗶𝗻 𝟯�_r𝗱 🕊", url=client.invitelink3)],
     ]
     try:
         buttons.append(
@@ -268,7 +266,7 @@ async def not_joined(client: Client, message: Message):
 
 @Bot.on_message(filters.command('users') & filters.private & filters.user(ADMINS))
 async def get_users(client: Bot, message: Message):
-    msg = await client.send_message(chat_id=message.chat.id, text=f"Processing...")
+    msg = await client.send_message(chat_id=message.chat.id, text="Processing...")
     users = await full_userbase()
     await msg.edit(f"{len(users)} Users Are Using This Bot")
 
@@ -279,11 +277,10 @@ async def send_text(client: Bot, message: Message):
         await asyncio.sleep(8)
         return await msg.delete()
 
-    # Extract seconds from command if provided
     try:
         seconds = int(message.text.split(maxsplit=1)[1])
     except (IndexError, ValueError):
-        seconds = None  # No auto-delete if not provided
+        seconds = None
 
     query = await full_userbase()
     broadcast_msg = message.reply_to_message
@@ -292,9 +289,9 @@ async def send_text(client: Bot, message: Message):
     blocked = 0
     deleted = 0
     unsuccessful = 0
-    sent_messages = []  # To store (chat_id, message_id)
+    sent_messages = []
 
-    pls_wait = await message.reply("<i>ʙʀᴏᴀᴅᴄᴀꜱᴛ ᴘʀᴏᴄᴇꜱꜱɪɴɢ ᴛɪʟʟ ᴡᴀɪᴛ ʙʀᴏᴏ... </i>")
+    pls_wait = await message.reply("<i>ʙʀᴏᴀᴅᴄᴀꜱᴛ ᴘʀᴏᴄᴇꜱꜱɪɴɢ ᴛɪʟʟ ᴡᴀɪᴛ ʙʀᴏᴏ...</i>")
 
     for chat_id in query:
         try:
@@ -302,7 +299,7 @@ async def send_text(client: Bot, message: Message):
             sent_messages.append((chat_id, sent.id))
             successful += 1
         except FloodWait as e:
-            await asyncio.sleep(e.x)
+            await asyncio.sleep(e.value)
             sent = await broadcast_msg.copy(chat_id)
             sent_messages.append((chat_id, sent.id))
             successful += 1
@@ -312,9 +309,9 @@ async def send_text(client: Bot, message: Message):
         except InputUserDeactivated:
             await del_user(chat_id)
             deleted += 1
-        except:
+        except Exception as e:
+            print(f"Error broadcasting to {chat_id}: {e}")
             unsuccessful += 1
-            pass
         total += 1
 
     status = f"""<b><u>ʙʀᴏᴀᴅᴄᴀꜱᴛ ᴄᴏᴍᴘʟᴇᴛᴇᴅ</u>
@@ -327,19 +324,16 @@ async def send_text(client: Bot, message: Message):
 
     await pls_wait.edit(status)
 
-    # Schedule deletion after given seconds if specified
     if seconds:
         await asyncio.sleep(seconds)
         for chat_id, msg_id in sent_messages:
             try:
                 await client.delete_messages(chat_id, msg_id)
-            except:
-                pass
+            except Exception as e:
+                print(f"Error deleting broadcast message {msg_id}: {e}")
 
-# Function to handle file deletion
-async def delete_files(codeflix_msgs, client, message, k):
-    await asyncio.sleep(FILE_AUTO_DELETE)  # Wait for the duration specified in config.py
-    
+async def delete_files(codeflix_msgs, client, message):
+    await asyncio.sleep(FILE_AUTO_DELETE)
     for msg in codeflix_msgs:
         try:
             await client.delete_messages(chat_id=msg.chat.id, message_ids=[msg.id])
