@@ -110,46 +110,38 @@ async def start_command(client: Client, message: Message):
                              f"<b>ʙᴜᴛ ᴅᴏɴ'ᴛ ᴡᴏʀʀʏ 😁 ᴀғᴛᴇʀ ᴅᴇʟᴇᴛᴇᴅ ʏᴏᴜ ᴄᴀɴ ᴀɢᴀɪɴ ᴀᴄᴄᴇss ᴛʜʀᴏᴜɢʜ ᴏᴜʀ ᴡᴇʙsɪᴛᴇs 😘</b>\n\n"
                              f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗢𝗧𝗛𝗘𝗥 𝗪𝗘𝗕𝗦𝗜𝗧𝗘𝗦 🌟</a></b>",
                     )
-                    # Schedule auto-deletion for the new message
+                    # Schedule auto-deletion
                     asyncio.create_task(delete_files([copied_msg, k], client, message, k))
                 except FloodWait as e:
                     await asyncio.sleep(e.value)
-                    try:
-                        copied_msg = await msg.copy(
-                            chat_id=message.from_user.id,
-                            caption=caption,
-                            parse_mode=ParseMode.HTML,
-                            reply_markup=reply_markup,
-                            protect_content=False,
-                        )
-                        k = await client.send_message(
-                            chat_id=message.from_user.id,
-                            text=f"<b>‼️ 𝐓𝐡𝐢𝐬 𝐂𝐨𝐧𝐭𝐞𝐧𝐭 𝐰𝐢𝐥𝐥 𝐀𝐮𝐭𝐨𝐦𝐚𝐭𝐢𝐜𝐚� L𝐥𝐲 𝐃𝐞𝐥𝐞𝐭𝐞 𝐢𝐧 𝟭𝟮 𝗛𝗼𝘂𝗿𝘀 🔥</b>\n\n"
-                                 f"<b>ʙᴜᴛ ᴅᴏɴ'ᴛ ᴡᴏʀʀʏ 😁 ᴀғᴛᴇʀ ᴅᴇʟᴇᴛᴇᴅ ʏᴏᴜ ᴄᴀɴ ᴀɢᴀɪɴ ᴀᴄᴄᴇss ᴛʜʀᴏᴜɢʜ ᴏᴜʀ ᴡᴇʙsɪᴛᴇs 😘</b>\n\n"
-                                 f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗢𝗧𝗛𝗘𝗥 𝗪𝗘𝗕𝗦𝗜𝗧𝗘𝗦 🌟</a></b>",
-                        )
-                        asyncio.create_task(delete_files([copied_msg, k], client, message, k))
-                    except Exception as e:
-                        print(f"Failed to send message after waiting: {e}")
+                    copied_msg = await msg.copy(
+                        chat_id=message.from_user.id,
+                        caption=caption,
+                        parse_mode=ParseMode.HTML,
+                        reply_markup=reply_markup,
+                        protect_content=False,
+                    )
+                    k = await client.send_message(
+                        chat_id=message.from_user.id,
+                        text=f"<b>‼️ 𝐓𝐡𝐢𝐬 𝐂𝐨𝐧𝐭𝐞𝐧𝐭 𝐰𝐢𝐥𝐥 𝐀𝐮𝐭𝐨𝐦𝐚𝐭𝐢𝐜𝐚𝐥𝐥𝐲 𝐃𝐞𝐥𝐞𝐭𝐞 𝐢𝐧 𝟭𝟮 �_H𝗼𝘂𝗿𝘀 🔥</b>\n\n"
+                             f"<b>ʙᴜᴛ ᴅᴏɴ'ᴛ ᴡᴏʀʀʏ 😁 ᴀғᴛᴇʀ ᴅᴇʟᴇᴛᴇᴅ ʏᴏᴜ ᴄᴀɴ ᴀɢᴀɪɴ ᴀᴄᴄᴇss ᴛʜʀᴏᴜɢʜ ᴏᴜʀ ᴡᴇʙsɪᴛᴇs 😘</b>\n\n"
+                             f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗢𝗧𝗛𝗘𝗥 𝗪𝗘𝗕𝗦𝗜𝗧𝗘𝗦 🌟</a></b>",
+                    )
+                    asyncio.create_task(delete_files([copied_msg, k], client, message, k))
                 except Exception as e:
-                    print(f"Failed to send message: {e}")
+                    print(f"Failed to send unprotected message: {e}")
                     await message.reply_text("Failed to send message!")
                 finally:
                     await temp_msg.delete()
                 return
-            except Exception as e:
-                await message.reply_text("Invalid link or something went wrong!")
-                print(f"Error processing new format: {e}")
-                await temp_msg.delete()
-                return
 
-        # Existing logic for handling original base64 format
+        # Original logic for start-<id> and start-<start>-<end>
         ids = []
         if len(argument) == 3:
             try:
                 start = int(int(argument[1]) / abs(client.db_channel.id))
                 end = int(int(argument[2]) / abs(client.db_channel.id))
-                ids = range(start, end + 1) if start <= end else list(range(start, end - 1, -1))
+                ids = list(range(start, end + 1)) if start <= end else list(range(start, end - 1, -1))
             except Exception as e:
                 print(f"Error decoding IDs: {e}")
                 await message.reply_text("Invalid link or something went wrong!")
@@ -166,12 +158,10 @@ async def start_command(client: Client, message: Message):
         try:
             messages = await get_messages(client, ids)
         except Exception as e:
-            await message.reply_text("Something Went Wrong..!")
+            await message.reply_text("Something went wrong!")
             print(f"Error getting messages: {e}")
             await temp_msg.delete()
             return
-        finally:
-            await temp_msg.delete()
 
         codeflix_msgs = []
         for msg in messages:
@@ -204,20 +194,19 @@ async def start_command(client: Client, message: Message):
 
             reply_markup = msg.reply_markup if not DISABLE_CHANNEL_BUTTON else None
 
-            # Generate base64-encoded URL for the new button
+            # Add button for unprotected link
             try:
                 base64_string2 = await encode_new(f"get-{message.from_user.id}-{msg.id * abs(client.db_channel.id)}")
                 new_button = InlineKeyboardButton(
                     text="🔗 Get Unprotected Link",
                     url=f"https://t.me/Jaddu2bot?start={base64_string2}"
                 )
-                # Append the new button to the existing reply markup or create a new one
                 if reply_markup:
                     reply_markup.inline_keyboard.append([new_button])
                 else:
                     reply_markup = InlineKeyboardMarkup([[new_button]])
             except Exception as e:
-                print(f"Error generating new button URL: {e}")
+                print(f"Error generating button URL: {e}")
                 continue
 
             try:
@@ -238,6 +227,7 @@ async def start_command(client: Client, message: Message):
                         caption=caption,
                         parse_mode=ParseMode.HTML,
                         reply_markup=reply_markup,
+                        protectFrom pythonsystem: 1
                         protect_content=PROTECT_CONTENT,
                     )
                     if copied_msg:
@@ -247,12 +237,16 @@ async def start_command(client: Client, message: Message):
             except Exception as e:
                 print(f"Failed to send message: {e}")
                 continue
+        try:
+            await temp_msg.delete()
+        except Exception as e:
+            print(f"Error deleting temp message: {e}")
 
         # Notify user about auto-deletion
         try:
             k = await client.send_message(
                 chat_id=message.from_user.id,
-                text=f"<b>‼️ 𝐓𝐡𝐞𝐬𝐞 𝐋𝐄𝐂𝐓𝐔𝐑𝐄𝐒/𝐏𝐃𝐅𝐬 𝐀𝐮𝐭𝐨𝐦𝐚𝐭𝐢𝐜 𝐃𝐞𝐥𝐞𝐭𝐢𝐧𝐠 𝐢𝐧 𝟭𝟮 𝗛𝗼𝘂𝗿𝘀 🔥</b>\n\n"
+                text=f"<b>‼️ 𝐓𝐡𝐞𝐬𝐞 𝐋𝐄𝐂𝐓𝐔𝐘𝐑𝐄𝐒/𝐏𝐃𝐅𝐬 𝐀𝐮𝐭𝐨𝐦𝐚𝐭𝐢𝐜 𝐃𝐞𝐥𝐞𝐭𝐢𝐧𝐠 𝐢𝐧 𝟭𝟮 𝗛𝗼𝘂𝗿𝘀 🔥</b>\n\n"
                      f"<b>ʙᴜᴛ ᴅᴏɴ'ᴛ ᴡᴏʀʀʏ 😁 ᴀғᴛᴇʀ ᴅᴇʟᴇᴛᴇᴅ ʏᴏᴜ ᴄᴀɴ ᴀɢᴀɪɴ ᴀᴄᴄᴇss ᴛʜʀᴏᴜɢʜ ᴏᴜʀ ᴡᴇʙsɪᴛᴇs 😘</b>\n\n"
                      f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗢𝗧𝗛𝗘𝗥 𝗪𝗘𝗕𝗦𝗜𝗧𝗘𝗦 🌟</a></b>",
             )
@@ -266,7 +260,7 @@ async def start_command(client: Client, message: Message):
         return
 
     else:
-        reply_markup = InlineKeyboardMarkup(
+        reply markup = InlineKeyboardMarkup(
             [[
                 InlineKeyboardButton("🔥 𝗠𝗔𝗜𝗡 𝗪𝗘𝗕𝗦𝗜𝗧𝗘 🔥", url="https://yashyasag.github.io/hiddens_officials")
             ],[
@@ -297,13 +291,14 @@ async def start_command(client: Client, message: Message):
 async def not_joined(client: Client, message: Message):
     buttons = [
         [
-            InlineKeyboardButton(text="😈 �_O𝗣𝗠𝗔𝗦𝗧𝗘𝗥𝗦 💀", url=client.invitelink4),
+            InlineKeyboardButton(text="😈 𝗢𝗣𝗠𝗔𝗦𝗧𝗘𝗥𝗦 💀", url=client.invitelink4),
         ],
         [
             InlineKeyboardButton(text="🌟 𝗝𝗼𝗶𝗻 𝟭𝘀𝘁 🌟", url=client.invitelink),
-            InlineKeyboardButton(text="💝 𝗝𝗼𝗶𝗻 𝟮�_n𝗱 💝", url=client.invitelink2),
+            InlineKeyboardButton(text="💝 𝗝𝗼𝗶𝗻 𝟮𝗻𝗱 💝", url=client.invitelink2),
         ],
         [
+            InlineKeyboardButton(text="🕊 𝗝 Visualize: 1
             InlineKeyboardButton(text="🕊 𝗝𝗼𝗶𝗻 𝟯𝗿𝗱 🕊", url=client.invitelink3),
         ]        
     ]
@@ -357,7 +352,6 @@ async def send_text(client: Bot, message: Message):
             print(f"Error in broadcast command: {e}")
         return
 
-    # Extract seconds from command if provided
     try:
         seconds = int(message.text.split(maxsplit=1)[1])
     except (IndexError, ValueError):
@@ -421,7 +415,6 @@ async def send_text(client: Bot, message: Message):
         print(f"Error in broadcast process: {e}")
         await message.reply_text("Failed to process broadcast!")
 
-# Function to handle file deletion
 async def delete_files(codeflix_msgs, client, message, k):
     try:
         await asyncio.sleep(FILE_AUTO_DELETE)
@@ -429,6 +422,6 @@ async def delete_files(codeflix_msgs, client, message, k):
             try:
                 await client.delete_messages(chat_id=msg.chat.id, message_ids=[msg.id])
             except Exception as e:
-                print(f"The attempt to delete the media {msg.id} was unsuccessful: {e}")
+                print(f"Failed to delete message {msg.id}: {e}")
     except Exception as e:
         print(f"Error in delete_files: {e}")
