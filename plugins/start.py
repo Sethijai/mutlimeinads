@@ -9,6 +9,13 @@ from config import *
 from helper_func import subscribed, encode, decode, encode_new, decode_new, get_messages
 from database.database import add_user, del_user, full_userbase, present_user
 
+# Different delete times for different access types
+BULK_DELETE_TIME = FILE_AUTO_DELETE  # For bulk downloads (original functionality)
+try:
+    INDIVIDUAL_DELETE_TIME = INDIVIDUAL_AUTO_DELETE  # For individual access
+except NameError:
+    INDIVIDUAL_DELETE_TIME = FILE_AUTO_DELETE  # Fallback to bulk delete time if not defined
+
 codeflixbots = FILE_AUTO_DELETE
 subaru = codeflixbots
 file_auto_delete = humanize.naturaldelta(subaru)
@@ -111,14 +118,16 @@ async def start_command(client: Client, message: Message):
                         # Notify user about auto-deletion for individual message
                         k = await client.send_message(
                             chat_id=message.from_user.id,
-                            text=f"<b>‼️ 𝐓𝐡𝐢𝐬 𝐋𝐄𝐂𝐓𝐔𝐑𝐄/𝐏𝐃𝐅 𝐀𝐮𝐭𝐨𝐦𝐚𝐭𝐢𝐜 𝐃𝐞𝐥𝐞𝐭𝐢𝐧𝐠 𝐢𝐧 𝟭𝟮 𝗛𝗼𝘂𝗿𝘀 🔥</b>\n\n"
+                            text=f"<b>‼️ 𝐓𝐡𝐢𝐬 𝐋𝐄𝐂𝐓𝐔𝐑𝐄/𝐏𝐃𝐅 𝐀𝐮𝐭𝐨𝐦𝐚𝐭𝐢𝐜 𝐃𝐞𝐥𝐞𝐭𝐢𝐧𝐠 𝐢𝐧 𝟯 𝗗𝗮𝘆𝘀 💀</b>\n\n"
+                                 f"<b>🥰 𝘕𝘰𝘸 𝘺𝘰𝘶 𝘤𝘢𝘯 𝘍𝘰𝘳𝘸𝘢𝘳𝘥 𝘵𝘩𝘪𝘴 𝘓𝘦𝘤𝘵𝘶𝘳𝘦/𝘗𝘥𝘧 𝘢𝘯𝘥 𝘢𝘭𝘴𝘰 𝘺𝘰𝘶 𝘤𝘢𝘯 𝘥𝘰𝘸𝘯𝘭𝘰𝘢𝘥 𝘢𝘯𝘥 𝘚𝘢𝘷𝘦 𝘪𝘯 𝘎𝘢𝘭𝘭𝘦𝘳𝘺 𝘋𝘰 𝘍𝘢𝘴𝘵 𝘧𝘰𝘳 𝘵𝘩𝘢𝘵 𝘺𝘰𝘶 𝘩𝘢𝘷𝘦 𝘰𝘯𝘭𝘺 3 𝘋𝘢𝘺𝘴.</b>\n\n"
+                                 f"<b>🥺 𝐌𝐞𝐧𝐞 𝐬𝐮𝐧𝐚 𝐡𝐚𝐢 𝐭𝐮 𝐡𝐚𝐦𝐚𝐫𝐢 𝐰𝐞𝐛𝐬𝐢𝐭𝐞 𝐬𝐞 𝐋𝐞𝐜𝐭𝐮𝐫𝐞 𝐝𝐞𝐤𝐡𝐭𝐚 𝐡𝐚𝐢 𝐩𝐚𝐫 𝐖𝐞𝐛𝐬𝐢𝐭𝐞 𝐚𝐩𝐧𝐞 𝐝𝐨𝐬𝐭𝐨 𝐤𝐞 𝐬𝐚𝐭𝐡 𝐬𝐡𝐚𝐫𝐞 𝐧𝐚𝐡𝐢 𝐤𝐚𝐫𝐭𝐚 😔 𝐆𝐚𝐥𝐚𝐭 𝐛𝐚𝐚𝐭 𝐡𝐚𝐢 𝐧𝐚 𝐛𝐡𝐚𝐢 𝐜𝐡𝐚𝐥 𝐚𝐛 𝐤𝐚𝐫𝐝𝐞 𝐒𝐡𝐚𝐫𝐞 ❣️
                                  f"<b>ʙᴜᴛ ᴅᴏɴ'ᴛ ᴡᴏʀʀʏ 😁 ᴀғᴛᴇʀ ᴅᴇʟᴇᴛᴇᴅ ʏᴏᴜ ᴄᴀɴ ᴀɢᴀɪɴ ᴀᴄᴄᴇss ᴛʜʀᴏᴜɢʜ ᴏᴜʀ ᴡᴇʙsɪᴛᴇs 😘</b>\n\n"
                                  f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗢𝗧𝗛𝗘𝗥 𝗪𝗘𝗕𝗦𝗜𝗧𝗘𝗦 🌟</a></b>",
                         )
                         
                         codeflix_msgs.append(k)
-                        # Schedule auto-deletion for individual message
-                        asyncio.create_task(delete_files(codeflix_msgs, client, message, k))
+                        # Schedule auto-deletion for individual message with individual delete time
+                        asyncio.create_task(delete_files(codeflix_msgs, client, message, k, INDIVIDUAL_DELETE_TIME))
                         
                         return
                         
@@ -194,7 +203,7 @@ async def start_command(client: Client, message: Message):
 
             # Create individual access button and add it to existing reply_markup
             base64_string2 = await encode_new(f"HACKHEIST-{user_id}-{msg.id * abs(client.db_channel.id)}")
-            individual_button = InlineKeyboardButton("😁 𝗖𝗹𝗶𝗰𝗸 𝘁𝗼 𝗦𝗮𝘃𝗲 📥", url=f"https://t.me/{client.username}?start={base64_string2}")
+            individual_button = InlineKeyboardButton("😁 𝗖𝗟𝗜𝗖𝗞 𝗧𝗢 𝗦𝗔𝗩𝗘 📥", url=f"https://t.me/{client.username}?start={base64_string2}")
 
             # Handle reply_markup - add individual button to existing markup or create new one
             if DISABLE_CHANNEL_BUTTON:
@@ -241,7 +250,8 @@ async def start_command(client: Client, message: Message):
         # Notify user about auto-deletion
         k = await client.send_message(
             chat_id=message.from_user.id,
-            text=f"<b>‼️ 𝐓𝐡𝐞𝐬𝐞 𝐋𝐄𝐂𝐓𝐔𝐑𝐄𝐒/𝐏𝐃𝐅𝐬 𝐀𝐮𝐭𝐨𝐦𝐚𝐭𝐢𝐜 𝐃𝐞𝐥𝐞𝐭𝐢𝐧𝐠 𝐢𝐧 𝟭𝟮 𝗛𝗼𝘂𝗿𝘀 🔥</b>\n\n"
+            text=f"<b>‼️ 𝐓𝐡𝐞𝐬𝐞 𝐋𝐄𝐂𝐓𝐔𝐑𝐄𝐒/𝐏𝐃𝐅𝐬 𝐀𝐮𝐭𝐨𝐦𝐚𝐭𝐢𝐜 𝐃𝐞𝐥𝐞𝐭𝐢𝐧𝐠 𝐢𝐧 𝟰 𝗛𝗼𝘂𝗿𝘀 🔥</b>\n\n"
+                 f"<b>𝘚𝘰 𝘍𝘰𝘳 𝘚𝘢𝘷𝘪𝘯𝘨 𝘓𝘦𝘤𝘵𝘶𝘳𝘦/𝘗𝘥𝘧 𝘤𝘭𝘪𝘤𝘬 𝘰𝘯 𝘣𝘦𝘭𝘰𝘸 𝘣𝘶𝘵𝘵𝘰𝘯(😁 𝗖𝗟𝗜𝗖𝗞 𝗧𝗢 𝗦𝗔𝗩𝗘 📥) 𝘰𝘧 𝘸𝘩𝘪𝘤𝘩 𝘓𝘦𝘤𝘵𝘶𝘳𝘦/𝘗𝘥𝘧 𝘺𝘰𝘶 𝘸𝘢𝘯𝘵 𝘵𝘰 𝘴𝘢𝘷𝘦 𝘣𝘺 𝘵𝘩𝘪𝘴 𝘵𝘩𝘢𝘵 𝘭𝘦𝘤𝘵𝘶𝘳𝘦/𝘗𝘥𝘧 𝘠𝘰𝘶 𝘤𝘢𝘯 𝘚𝘢𝘷𝘦 𝘪𝘯 𝘎𝘢𝘭𝘭𝘦𝘳𝘺 😊</b>\n\n"
                  f"<b>ʙᴜᴛ ᴅᴏɴ'ᴛ ᴡᴏʀʀʏ 😁 ᴀғᴛᴇʀ ᴅᴇʟᴇᴛᴇᴅ ʏᴏᴜ ᴄᴀɴ ᴀɢᴀɪɴ ᴀᴄᴄᴇss ᴛʜʀᴏᴜɢʜ ᴏᴜʀ ᴡᴇʙsɪᴛᴇs 😘</b>\n\n"
                  f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗢𝗧𝗛𝗘𝗥 𝗪𝗘𝗕𝗦𝗜𝗧𝗘𝗦 🌟</a></b>",
         )
@@ -250,8 +260,8 @@ async def start_command(client: Client, message: Message):
         codeflix_msgs.append(k)
 
         
-        # Schedule auto-deletion
-        asyncio.create_task(delete_files(codeflix_msgs, client, message, k))
+        # Schedule auto-deletion with bulk delete time
+        asyncio.create_task(delete_files(codeflix_msgs, client, message, k, BULK_DELETE_TIME))
         return
 
     else:
@@ -389,8 +399,11 @@ async def send_text(client: Bot, message: Message):
 
 
 # Function to handle file deletion
-async def delete_files(codeflix_msgs, client, message, k):
-    await asyncio.sleep(FILE_AUTO_DELETE)  # Wait for the duration specified in config.py
+async def delete_files(codeflix_msgs, client, message, k, delete_time=None):
+    if delete_time is None:
+        delete_time = FILE_AUTO_DELETE
+    
+    await asyncio.sleep(delete_time)  # Wait for the specified duration
     
     for msg in codeflix_msgs:
         try:
