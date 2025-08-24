@@ -194,7 +194,7 @@ async def start_command(client: Client, message: Message):
 
             # Create individual access button and add it to existing reply_markup
             base64_string2 = await encode_new(f"HACKHEIST-{user_id}-{msg.id * abs(client.db_channel.id)}")
-            individual_button = InlineKeyboardButton("🔓 Individual Access", url=f"https://t.me/Jaddu2bot?start={base64_string2}")
+            individual_button = InlineKeyboardButton("😁 𝗖𝗹𝗶𝗰𝗸 𝘁𝗼 𝗦𝗮𝘃𝗲 📥", url=f"https://t.me/{client.username}?start={base64_string2}")
 
             # Handle reply_markup - add individual button to existing markup or create new one
             if DISABLE_CHANNEL_BUTTON:
