@@ -145,51 +145,24 @@ async def decode_new(base64_string2):
 async def get_messages(client, message_ids, channel_id):
     messages = []
     total_messages = 0
-
-    if not message_ids:
-        print("No message IDs provided")
-        return messages
-
-    if not channel_id:
-        print("No channel ID provided")
-        return messages
-
-    # Brief delay to ensure session syncs with Telegram API
-    await asyncio.sleep(2)  # Wait 2 seconds to allow API to recognize admin status
-
-    while total_messages < len(message_ids):
-        temp_ids = message_ids[total_messages:total_messages + 200]
+    while total_messages != len(message_ids):
+        temb_ids = message_ids[total_messages:total_messages+200]
         try:
             msgs = await client.get_messages(
                 chat_id=channel_id,
-                message_ids=temp_ids
+                message_ids=temb_ids
             )
-            valid_msgs = [msg for msg in msgs if msg is not None]
-            print(f"Fetched {len(valid_msgs)} messages for IDs {temp_ids} in channel {channel_id}")
-            messages.extend(valid_msgs)
         except FloodWait as e:
-            print(f"FloodWait: Waiting {e.x} seconds for channel {channel_id}")
             await asyncio.sleep(e.x)
-            try:
-                msgs = await client.get_messages(
-                    chat_id=channel_id,
-                    message_ids=temp_ids
-                )
-                valid_msgs = [msg for msg in msgs if msg is not None]
-                print(f"Fetched {len(valid_msgs)} messages for IDs {temp_ids} in channel {channel_id} after FloodWait")
-                messages.extend(valid_msgs)
-            except Exception as e:
-                print(f"Error after FloodWait for IDs {temp_ids} in channel {channel_id}: {e}")
-        except Exception as e:
-            print(f"Error fetching messages for IDs {temp_ids} in channel {channel_id}: {e}")
-        total_messages += len(temp_ids)
-
-    if messages:
-        print(f"Successfully fetched {len(messages)} messages from channel {channel_id}")
-    else:
-        print(f"No messages fetched for IDs {message_ids} in channel {channel_id}")
+            msgs = await client.get_messages(
+                chat_id=channel_id,
+                message_ids=temb_ids
+            )
+        except:
+            pass
+        total_messages += len(temb_ids)
+        messages.extend(msgs)
     return messages
-
 
 async def get_message_id(client, message):
     if message.forward_from_chat:
