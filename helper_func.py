@@ -142,26 +142,59 @@ async def decode_new(base64_string2):
         raise
 
 async def get_messages(client, message_ids, channel_id):
+    if not message_ids:
+        raise ValueError("No message IDs provided")
+    if not channel_id:
+        raise ValueError("No channel ID provided")
+
+    # Validate channel access
+    try:
+        await client.get_chat(channel_id)
+    except ChannelInvalid:
+        raise ChannelInvalid(f"Invalid channel ID: {channel_id}")
+    except ChatAdminRequired:
+        raise ChatAdminRequired(f"Bot requires admin access to channel: {channel_id}")
+    except Exception as e:
+        raise Exception(f"Error accessing channel {channel_id}: {e}")
+
     messages = []
     total_messages = 0
-    while total_messages != len(message_ids):
+    while total_messages < len(message_ids):
         temb_ids = message_ids[total_messages:total_messages+200]
         try:
             msgs = await client.get_messages(
-                chat_id=channel_id,  # Use channel_id from caller (derived from base64 string)
+                chat_id=channel_id,
                 message_ids=temb_ids
             )
+            # Filter out None or invalid messages
+            valid_msgs = [msg for msg in msgs if msg is not None]
+            if not valid_msgs:
+                print(f"No valid messages found for IDs {temb_ids} in channel {channel_id}")
+            messages.extend(valid_msgs)
         except FloodWait as e:
+            print(f"FloodWait: Waiting {e.x} seconds")
             await asyncio.sleep(e.x)
-            msgs = await client.get_messages(
-                chat_id=channel_id,  # Use channel_id from caller
-                message_ids=temb_ids
-            )
+            try:
+                msgs = await client.get_messages(
+                    chat_id=channel_id,
+                    message_ids=temb_ids
+                )
+                valid_msgs = [msg for msg in msgs if msg is not None]
+                messages.extend(valid_msgs)
+            except Exception as e:
+                print(f"Error fetching messages after FloodWait for IDs {temb_ids}: {e}")
+                raise
+        except MessageIdsInvalid:
+            print(f"Invalid message IDs: {temb_ids} in channel {channel_id}")
+            raise MessageIdsInvalid(f"Invalid message IDs: {temb_ids}")
         except Exception as e:
-            print(f"Error fetching messages: {e}")
-            pass
+            print(f"Error fetching messages for IDs {temb_ids} in channel {channel_id}: {e}")
+            raise
         total_messages += len(temb_ids)
-        messages.extend(msgs)
+    
+    if not messages:
+        raise ValueError(f"No messages found for IDs {message_ids} in channel {channel_id}")
+    
     return messages
 
 async def get_message_id(client, message):
