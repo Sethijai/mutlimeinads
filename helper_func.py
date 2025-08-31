@@ -145,62 +145,31 @@ async def get_messages(client, message_ids, channel_id):
     messages = []
     total_messages = 0
 
-    if not message_ids:
-        print("No message IDs provided")
-        return messages
-    if not channel_id:
-        print("No channel ID provided")
+    if not message_ids or not channel_id:
+        print("Missing message IDs or channel ID")
         return messages
 
-    # Force re-validate channel access
-    try:
-        chat = await client.get_chat(channel_id)   # this pulls fresh info
-        if not chat:
-            print(f"Could not fetch chat info for {channel_id}")
-            return messages
-        print(f"Access confirmed for channel {channel_id}")
-    except ChannelInvalid:
-        print(f"Invalid channel ID: {channel_id}")
-        return messages
-    except ChatAdminRequired:
-        print(f"Bot requires admin access to channel: {channel_id}")
-        return messages
-    except Exception as e:
-        print(f"Error accessing channel {channel_id}: {e}")
-        return messages
-
-    # 🚀 workaround: join as admin if cache didn’t update
-    try:
-        await client.join_chat(channel_id)
-        print(f"Joined channel {channel_id} again to refresh access")
-    except Exception:
-        pass  # already joined or not needed
+    # Strip "-100" prefix if present (Telegram uses /c/<id> format)
+    channel_short_id = str(channel_id).replace("-100", "")
 
     while total_messages < len(message_ids):
-        temb_ids = message_ids[total_messages:total_messages+200]
+        temp_ids = message_ids[total_messages:total_messages+200]
         try:
-            msgs = await client.get_messages(channel_id, message_ids=temb_ids)
-            valid_msgs = [msg for msg in msgs if msg is not None]
-            if valid_msgs:
-                print(f"Fetched {len(valid_msgs)} messages for IDs {temb_ids} in channel {channel_id}")
-            else:
-                print(f"No valid messages found for IDs {temb_ids} in channel {channel_id}")
-            messages.extend(valid_msgs)
-        except FloodWait as e:
-            print(f"FloodWait: Waiting {e.x} seconds for channel {channel_id}")
-            await asyncio.sleep(e.x)
-            continue
-        except MessageIdsInvalid:
-            print(f"Invalid message IDs: {temb_ids} in channel {channel_id}")
+            msgs = []
+            for mid in temp_ids:
+                link = f"https://t.me/c/{channel_short_id}/{mid}"
+                msg = await client.get_messages(link)
+                if msg:
+                    msgs.append(msg)
+            if msgs:
+                print(f"Fetched {len(msgs)} messages from channel {channel_id}")
+                messages.extend(msgs)
         except Exception as e:
-            print(f"Error fetching messages for IDs {temb_ids} in channel {channel_id}: {e}")
-        total_messages += len(temb_ids)
+            print(f"Error fetching messages: {e}")
+        total_messages += len(temp_ids)
 
-    if messages:
-        print(f"Successfully fetched {len(messages)} messages from channel {channel_id}")
-    else:
-        print(f"No messages fetched for IDs {message_ids} in channel {channel_id}")
     return messages
+
 
 
 async def get_message_id(client, message):
