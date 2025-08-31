@@ -5,15 +5,20 @@ from config import ADMINS
 from helper_func import encode
 import re
 
-def extract_message_id(url):
-    match = re.search(r'/(\d+)$', url)
-    return int(match.group(1)) if match else None
+def extract_message_details(url):
+    # Match URLs like https://t.me/c/{channel_id_without_-100}/{msg_id}
+    match = re.search(r'https://t\.me/c/([^/]+)/(\d+)$', url)
+    if match:
+        channel_id_without_minus_100 = match.group(1)
+        msg_id = int(match.group(2))
+        return msg_id, channel_id_without_minus_100
+    return None, None
 
 @Bot.on_message(filters.private & filters.user(ADMINS) & filters.command('batch'))
 async def bulk(client: Client, message: Message):
     try:
         bulk_input = await client.ask(
-            text="Send the structured text with subjects and links.",
+            text="Send the structured text with subjects and links (e.g., https://t.me/c/123456789/1).",
             chat_id=message.from_user.id,
             filters=filters.text,
             timeout=180
@@ -41,17 +46,22 @@ async def bulk(client: Client, message: Message):
             response_text += f"{subject}\n❌ Error: Missing links\n\n"
             continue
 
-        f_msg_id = extract_message_id(links[0])
-        s_msg_id = extract_message_id(links[1])
+        f_msg_id, f_channel_id = extract_message_details(links[0])
+        s_msg_id, s_channel_id = extract_message_details(links[1])
 
-        if not f_msg_id or not s_msg_id:
+        if not f_msg_id or not s_msg_id or not f_channel_id or not s_channel_id:
             response_text += f"{subject}\n❌ Error: Invalid links\n\n"
             continue
 
-        # Generate batch link with new format
-        channel_id_without_minus_100 = str(abs(client.db_channel.id))[3:]  # Remove -100 prefix
+        # Ensure both links are from the same channel
+        if f_channel_id != s_channel_id:
+            response_text += f"{subject}\n❌ Error: Links must be from the same channel\n\n"
+            continue
+
+        # Generate batch link with channel_id from message link
+        channel_id_without_minus_100 = f_channel_id
         modified_channel_id = int(channel_id_without_minus_100) * 8  # Multiply by 8
-        string = f"get-{f_msg_id}-{s_msg_id}-{-100{modified_channel_id}}"
+        string = f"get-{f_msg_id}-{s_msg_id}--100{modified_channel_id}"
         base64_string = await encode(string)
         batch_link = f"https://t.me/{client.username}?start={base64_string}"
 
