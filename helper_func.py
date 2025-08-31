@@ -317,11 +317,12 @@ async def get_messages(client, message_ids, channel_id):
     return messages
 
 async def get_message_id(client, message):
-    if message.forward_origin and hasattr(message.forward_origin, 'chat'):
-        # Handle forwarded messages
-        return message.forward_origin.chat.id, message.forward_origin.message_id
-    elif message.forward_origin and hasattr(message.forward_origin, 'sender_user_name'):
-        return None, 0  # Forwarded from a hidden user, invalid
+    if message.forward_from_chat:
+        # Handle forwarded messages from channels
+        return message.forward_from_chat.id, message.forward_from_message_id
+    elif message.forward_from:
+        # Forwarded from a user, invalid for this use case
+        return None, 0
     elif message.text:
         # Handle both private (https://t.me/c/2493255368/45956) and public (https://t.me/username/45956) links
         pattern = r"https://t.me/(?:c/)?([^/]+)/(\d+)"
