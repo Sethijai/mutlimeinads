@@ -142,70 +142,66 @@ async def decode_new(base64_string2):
         raise
 
 async def get_messages(client, message_ids, channel_id):
-    if not message_ids:
-        raise ValueError("No message IDs provided")
-    if not channel_id:
-        raise ValueError("No channel ID provided")
-
-    # Attempt to ensure channel access
-    try:
-        chat = await client.get_chat(channel_id)
-        print(f"Successfully accessed channel {channel_id}: {chat.title}")
-    except ChannelInvalid:
-        print(f"ChannelInvalid: Bot does not have access to channel {channel_id}")
-        try:
-            # Attempt to join the channel if possible (e.g., if public or bot has an invite link)
-            await client.join_chat(channel_id)
-            print(f"Joined channel {channel_id} successfully")
-        except Exception as join_error:
-            print(f"Failed to join channel {channel_id}: {join_error}")
-            raise ChannelInvalid(f"Bot cannot access channel {channel_id}. Ensure the bot is a member.")
-    except ChatAdminRequired:
-        print(f"ChatAdminRequired: Bot needs admin rights for channel {channel_id}")
-        raise ChatAdminRequired(f"Bot requires admin access to channel {channel_id}")
-    except Exception as e:
-        print(f"Error accessing channel {channel_id}: {e}")
-        raise Exception(f"Error accessing channel {channel_id}: {e}")
-
     messages = []
     total_messages = 0
+
+    if not message_ids:
+        print("No message IDs provided")
+        return messages
+    if not channel_id:
+        print("No channel ID provided")
+        return messages
+
+    # Force re-validate channel access
+    try:
+        chat = await client.get_chat(channel_id)   # this pulls fresh info
+        if not chat:
+            print(f"Could not fetch chat info for {channel_id}")
+            return messages
+        print(f"Access confirmed for channel {channel_id}")
+    except ChannelInvalid:
+        print(f"Invalid channel ID: {channel_id}")
+        return messages
+    except ChatAdminRequired:
+        print(f"Bot requires admin access to channel: {channel_id}")
+        return messages
+    except Exception as e:
+        print(f"Error accessing channel {channel_id}: {e}")
+        return messages
+
+    # 🚀 workaround: join as admin if cache didn’t update
+    try:
+        await client.join_chat(channel_id)
+        print(f"Joined channel {channel_id} again to refresh access")
+    except Exception:
+        pass  # already joined or not needed
+
     while total_messages < len(message_ids):
         temb_ids = message_ids[total_messages:total_messages+200]
         try:
-            msgs = await client.get_messages(
-                chat_id=channel_id,
-                message_ids=temb_ids
-            )
-            # Filter out None or invalid messages
+            msgs = await client.get_messages(channel_id, message_ids=temb_ids)
             valid_msgs = [msg for msg in msgs if msg is not None]
-            if not valid_msgs:
+            if valid_msgs:
+                print(f"Fetched {len(valid_msgs)} messages for IDs {temb_ids} in channel {channel_id}")
+            else:
                 print(f"No valid messages found for IDs {temb_ids} in channel {channel_id}")
             messages.extend(valid_msgs)
         except FloodWait as e:
-            print(f"FloodWait: Waiting {e.x} seconds for IDs {temb_ids}")
+            print(f"FloodWait: Waiting {e.x} seconds for channel {channel_id}")
             await asyncio.sleep(e.x)
-            try:
-                msgs = await client.get_messages(
-                    chat_id=channel_id,
-                    message_ids=temb_ids
-                )
-                valid_msgs = [msg for msg in msgs if msg is not None]
-                messages.extend(valid_msgs)
-            except Exception as retry_error:
-                print(f"Error fetching messages after FloodWait for IDs {temb_ids}: {retry_error}")
-                raise
+            continue
         except MessageIdsInvalid:
             print(f"Invalid message IDs: {temb_ids} in channel {channel_id}")
-            raise MessageIdsInvalid(f"Invalid message IDs: {temb_ids}")
         except Exception as e:
             print(f"Error fetching messages for IDs {temb_ids} in channel {channel_id}: {e}")
-            raise
         total_messages += len(temb_ids)
-    
-    if not messages:
-        raise ValueError(f"No messages found for IDs {message_ids} in channel {channel_id}")
-    
+
+    if messages:
+        print(f"Successfully fetched {len(messages)} messages from channel {channel_id}")
+    else:
+        print(f"No messages fetched for IDs {message_ids} in channel {channel_id}")
     return messages
+
 
 async def get_message_id(client, message):
     if message.forward_from_chat:
