@@ -147,14 +147,24 @@ async def get_messages(client, message_ids, channel_id):
     if not channel_id:
         raise ValueError("No channel ID provided")
 
-    # Validate channel access
+    # Attempt to ensure channel access
     try:
-        await client.get_chat(channel_id)
+        chat = await client.get_chat(channel_id)
+        print(f"Successfully accessed channel {channel_id}: {chat.title}")
     except ChannelInvalid:
-        raise ChannelInvalid(f"Invalid channel ID: {channel_id}")
+        print(f"ChannelInvalid: Bot does not have access to channel {channel_id}")
+        try:
+            # Attempt to join the channel if possible (e.g., if public or bot has an invite link)
+            await client.join_chat(channel_id)
+            print(f"Joined channel {channel_id} successfully")
+        except Exception as join_error:
+            print(f"Failed to join channel {channel_id}: {join_error}")
+            raise ChannelInvalid(f"Bot cannot access channel {channel_id}. Ensure the bot is a member.")
     except ChatAdminRequired:
-        raise ChatAdminRequired(f"Bot requires admin access to channel: {channel_id}")
+        print(f"ChatAdminRequired: Bot needs admin rights for channel {channel_id}")
+        raise ChatAdminRequired(f"Bot requires admin access to channel {channel_id}")
     except Exception as e:
+        print(f"Error accessing channel {channel_id}: {e}")
         raise Exception(f"Error accessing channel {channel_id}: {e}")
 
     messages = []
@@ -172,7 +182,7 @@ async def get_messages(client, message_ids, channel_id):
                 print(f"No valid messages found for IDs {temb_ids} in channel {channel_id}")
             messages.extend(valid_msgs)
         except FloodWait as e:
-            print(f"FloodWait: Waiting {e.x} seconds")
+            print(f"FloodWait: Waiting {e.x} seconds for IDs {temb_ids}")
             await asyncio.sleep(e.x)
             try:
                 msgs = await client.get_messages(
@@ -181,8 +191,8 @@ async def get_messages(client, message_ids, channel_id):
                 )
                 valid_msgs = [msg for msg in msgs if msg is not None]
                 messages.extend(valid_msgs)
-            except Exception as e:
-                print(f"Error fetching messages after FloodWait for IDs {temb_ids}: {e}")
+            except Exception as retry_error:
+                print(f"Error fetching messages after FloodWait for IDs {temb_ids}: {retry_error}")
                 raise
         except MessageIdsInvalid:
             print(f"Invalid message IDs: {temb_ids} in channel {channel_id}")
