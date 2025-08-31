@@ -3,7 +3,6 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from bot import Bot
 from config import ADMINS
 from helper_func import encode
-
 import re
 
 def extract_message_id(url):
@@ -49,8 +48,10 @@ async def bulk(client: Client, message: Message):
             response_text += f"{subject}\n❌ Error: Invalid links\n\n"
             continue
 
-        # Generate batch link
-        string = f"get-{f_msg_id * abs(client.db_channel.id)}-{s_msg_id * abs(client.db_channel.id)}"
+        # Generate batch link with new format
+        channel_id_without_minus_100 = str(abs(client.db_channel.id))[3:]  # Remove -100 prefix
+        modified_channel_id = int(channel_id_without_minus_100) * 8  # Multiply by 8
+        string = f"get-{f_msg_id}-{s_msg_id}-{-100{modified_channel_id}}"
         base64_string = await encode(string)
         batch_link = f"https://t.me/{client.username}?start={base64_string}"
 
