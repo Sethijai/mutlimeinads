@@ -9,7 +9,7 @@ from helper_func import encode, get_message_id, encode_link
 from config import *
 
 
-@Bot.on_message(filters.private & ADMINS & filters.command('batch'))
+@Bot.on_message(filters.private & filters.user(ADMINS) & filters.command('batch'))
 async def batch(client: Client, message: Message):
     # Get the first message
     while True:
@@ -62,7 +62,7 @@ async def batch(client: Client, message: Message):
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888
 # Ask Doubt on telegram @CodeflixSupport
     
-@Bot.on_message(filters.private & ADMINS & filters.command('genlink'))
+@Bot.on_message(filters.private & filters.user(ADMINS) & filters.command('genlink'))
 async def link_generator(client: Client, message: Message):
     while True:
         try:
@@ -82,7 +82,7 @@ async def link_generator(client: Client, message: Message):
     await channel_message.reply_text(f"<b>Here is your link</b>\n\n{link}", quote=True, reply_markup=reply_markup)
 
 
-@Bot.on_message(filters.private & admin & filters.command("custom_batch"))
+@Bot.on_message(filters.private & filters.user(ADMINS) & filters.command("custom_batch"))
 async def custom_batch(client: Client, message: Message):
     collected = []
     STOP_KEYBOARD = ReplyKeyboardMarkup([["STOP"]], resize_keyboard=True)
@@ -124,7 +124,7 @@ async def custom_batch(client: Client, message: Message):
     reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔁 Share URL", url=f'https://telegram.me/share/url?url={link}')]])
     await message.reply(f"<b>Here is your custom batch link:</b>\n\n{link}", reply_markup=reply_markup)
 
-@Bot.on_message(filters.private & admin & filters.command('nbatch'))
+@Bot.on_message(filters.private & filters.user(ADMINS) & filters.command('nbatch'))
 async def new_batch(client: Client, message: Message):
     while True:
         try:
