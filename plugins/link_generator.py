@@ -61,7 +61,7 @@ async def bulk(client: Client, message: Message):
         # Generate batch link with channel_id from message link
         channel_id_without_minus_100 = f_channel_id
         modified_channel_id = int(channel_id_without_minus_100) * 8  # Multiply by 8
-        string = f"get-{f_msg_id}-{s_msg_id}--100{modified_channel_id}"
+        string = f"get-{f_msg_id}-{s_msg_id}-{modified_channel_id}"  # Fixed: no -100 prefix
         base64_string = await encode(string)
         batch_link = f"https://t.me/{client.username}?start={base64_string}"
 
