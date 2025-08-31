@@ -110,54 +110,55 @@ async def is_subscribed(filter, client, update):
         return False                
     else:
         return True
-        
+
 async def encode(string):
     string_bytes = string.encode("ascii")
     base64_bytes = base64.urlsafe_b64encode(string_bytes)
-    base64_string = (base64_bytes.decode("ascii")).strip("=")
+    base64_string = base64_bytes.decode("ascii").strip("=")
     return base64_string
 
 async def decode(base64_string):
-    base64_string = base64_string.strip("=") # links generated before this commit will be having = sign, hence striping them to handle padding errors.
+    base64_string = base64_string.strip("=")  # Handle any remaining padding
     base64_bytes = (base64_string + "=" * (-len(base64_string) % 4)).encode("ascii")
-    string_bytes = base64.urlsafe_b64decode(base64_bytes) 
+    string_bytes = base64.urlsafe_b64decode(base64_bytes)
     string = string_bytes.decode("ascii")
     return string
 
 async def encode_new(string):
     string_bytes = string.encode("ascii")
     base64_bytes = base64.urlsafe_b64encode(string_bytes)
-    base64_string2 = (base64_bytes.decode("ascii")).strip("=")
+    base64_string2 = base64_bytes.decode("ascii").strip("=")
     return base64_string2
 
 async def decode_new(base64_string2):
     try:
         base64_string2 = base64_string2.strip("=")  # Handle any remaining padding
         base64_bytes = (base64_string2 + "=" * (-len(base64_string2) % 4)).encode("ascii")
-        string_bytes = base64.urlsafe_b64decode(base64_bytes) 
+        string_bytes = base64.urlsafe_b64decode(base64_bytes)
         string = string_bytes.decode("ascii")
         return string
     except Exception as e:
         print(f"Decode_new error: {e}")
         raise
 
-async def get_messages(client, message_ids):
+async def get_messages(client, message_ids, channel_id):
     messages = []
     total_messages = 0
     while total_messages != len(message_ids):
         temb_ids = message_ids[total_messages:total_messages+200]
         try:
             msgs = await client.get_messages(
-                chat_id=client.db_channel.id,
+                chat_id=channel_id,  # Use channel_id from caller (derived from base64 string)
                 message_ids=temb_ids
             )
         except FloodWait as e:
             await asyncio.sleep(e.x)
             msgs = await client.get_messages(
-                chat_id=client.db_channel.id,
+                chat_id=channel_id,  # Use channel_id from caller
                 message_ids=temb_ids
             )
-        except:
+        except Exception as e:
+            print(f"Error fetching messages: {e}")
             pass
         total_messages += len(temb_ids)
         messages.extend(msgs)
@@ -165,28 +166,21 @@ async def get_messages(client, message_ids):
 
 async def get_message_id(client, message):
     if message.forward_from_chat:
-        if message.forward_from_chat.id == client.db_channel.id:
-            return message.forward_from_message_id
-        else:
-            return 0
+        return message.forward_from_message_id, str(message.forward_from_chat.id)
     elif message.forward_sender_name:
-        return 0
+        return 0, None
     elif message.text:
-        pattern = "https://t.me/(?:c/)?(.*)/(\d+)"
-        matches = re.match(pattern,message.text)
+        pattern = r"https://t\.me/(?:c/)?([^/]+)/(\d+)"
+        matches = re.match(pattern, message.text)
         if not matches:
-            return 0
-        channel_id = matches.group(1)
+            return 0, None
+        channel_id_without_minus_100 = matches.group(1)
         msg_id = int(matches.group(2))
-        if channel_id.isdigit():
-            if f"-100{channel_id}" == str(client.db_channel.id):
-                return msg_id
-        else:
-            if channel_id == client.db_channel.username:
-                return msg_id
+        # Reconstruct full channel ID
+        channel_id = f"-100{channel_id_without_minus_100}"
+        return msg_id, channel_id
     else:
-        return 0
-
+        return 0, None
 
 def get_readable_time(seconds: int) -> str:
     count = 0
@@ -208,7 +202,6 @@ def get_readable_time(seconds: int) -> str:
     time_list.reverse()
     up_time += ":".join(time_list)
     return up_time
-
 
 subscribed = filters.create(is_subscribed)
        
