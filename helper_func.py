@@ -112,6 +112,12 @@ async def is_subscribed(filter, client, update):
     else:
         return True
 
+import base64
+import re
+import asyncio
+from pyrogram.errors import FloodWait, ChannelInvalid, ChatAdminRequired, MessageIdsInvalid
+from typing import Tuple, Union
+
 async def encode(string):
     string_bytes = string.encode("ascii")
     base64_bytes = base64.urlsafe_b64encode(string_bytes)
@@ -144,7 +150,7 @@ async def decode_new(base64_string2):
 
 async def encode_link(user_id: int = None, f_msg_id: int = None, s_msg_id: int = None, channel_id: int = None) -> str:
     """
-    Encode a Telegram bot deep link for batch or HACKHEIST access.
+    Encode a Telegram bot deep link for batch or HACKHEIST access with *8 multiplication.
     
     Args:
         user_id: User ID (required for HACKHEIST, optional for batch)
@@ -158,16 +164,21 @@ async def encode_link(user_id: int = None, f_msg_id: int = None, s_msg_id: int =
     if channel_id is None or f_msg_id is None:
         raise ValueError("channel_id and f_msg_id are required")
     
+    # Apply *8 multiplication
+    channel_id_encoded = channel_id * 8
+    f_msg_id_encoded = f_msg_id * 8
+    s_msg_id_encoded = s_msg_id * 8 if s_msg_id is not None else None
+    
     # Create the string to encode
     if user_id is not None and s_msg_id is None:
         # HACKHEIST link for single message
-        raw_string = f"HACKHEIST-{user_id}-{f_msg_id}-{channel_id}"
+        raw_string = f"HACKHEIST-{user_id}-{f_msg_id_encoded}-{channel_id_encoded}"
     elif s_msg_id is not None:
         # Batch link for message range
-        raw_string = f"get-{channel_id}-{f_msg_id}-{s_msg_id}"
+        raw_string = f"get-{channel_id_encoded}-{f_msg_id_encoded}-{s_msg_id_encoded}"
     else:
         # Batch link for single message
-        raw_string = f"get-{channel_id}-{f_msg_id}"
+        raw_string = f"get-{channel_id_encoded}-{f_msg_id_encoded}"
     
     # Encode to base64
     string_bytes = raw_string.encode("ascii")
@@ -178,7 +189,7 @@ async def encode_link(user_id: int = None, f_msg_id: int = None, s_msg_id: int =
 
 async def decode_link(encoded_string: str) -> Tuple[str, Union[int, None], int, int, Union[int, None]]:
     """
-    Decode a base64 string from a Telegram bot deep link.
+    Decode a base64 string from a Telegram bot deep link, reversing *8 multiplication.
     
     Args:
         encoded_string: The base64 encoded string (without the Telegram URL prefix)
@@ -206,32 +217,34 @@ async def decode_link(encoded_string: str) -> Tuple[str, Union[int, None], int, 
     parts = decoded_string.split("-")
     
     if decoded_string.startswith("HACKHEIST-"):
-        # HACKHEIST link: HACKHEIST-user_id-msg_id-channel_id
-        if len(parts) != 4:
+        # HACKHEIST link: HACKHEIST-user_id-msg_id_encoded-channel_id_encoded
+        if len(parts) < 4:
             raise ValueError("Invalid HACKHEIST string structure")
         try:
             user_id = int(parts[1])
-            f_msg_id = int(parts[2])
-            channel_id = int(parts[3])  # Handles negative or positive channel_id
+            f_msg_id = int(parts[2]) // 8  # Reverse *8
+            # Handle channel_id, which may include negative sign
+            channel_id_str = "-".join(parts[3:])  # Rejoin for negative channel_id
+            channel_id = int(channel_id_str) // 8  # Reverse *8
             return "HACKHEIST", user_id, f_msg_id, channel_id, None
         except (ValueError, IndexError):
             raise ValueError("Invalid number format in HACKHEIST string")
     
     elif decoded_string.startswith("get-"):
-        # Batch link: get--channel_id-f_msg_id-s_msg_id or get-channel_id-f_msg_id-s_msg_id
+        # Batch link: get-channel_id_encoded-f_msg_id_encoded-s_msg_id_encoded or get-channel_id_encoded-f_msg_id_encoded
         if len(parts) not in [3, 4, 5]:
             raise ValueError("Invalid batch string structure")
         try:
             if parts[1] == "":
-                # Negative channel ID: get--channel_id-...
-                channel_id = int(f"-{parts[2]}")
-                f_msg_id = int(parts[3])
-                s_msg_id = int(parts[4]) if len(parts) == 5 else None
+                # Negative channel ID: get--channel_id_encoded-...
+                channel_id = int(f"-{parts[2]}") // 8  # Reverse *8
+                f_msg_id = int(parts[3]) // 8  # Reverse *8
+                s_msg_id = int(parts[4]) // 8 if len(parts) == 5 else None  # Reverse *8
             else:
-                # Positive channel ID: get-channel_id-...
-                channel_id = int(parts[1])
-                f_msg_id = int(parts[2])
-                s_msg_id = int(parts[3]) if len(parts) == 4 else None
+                # Positive channel ID: get-channel_id_encoded-...
+                channel_id = int(parts[1]) // 8  # Reverse *8
+                f_msg_id = int(parts[2]) // 8  # Reverse *8
+                s_msg_id = int(parts[3]) // 8 if len(parts) == 4 else None  # Reverse *8
             return "batch", None, f_msg_id, channel_id, s_msg_id
         except (ValueError, IndexError):
             raise ValueError("Invalid number format in batch string")
