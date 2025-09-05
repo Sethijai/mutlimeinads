@@ -164,9 +164,9 @@ async def encode_link(user_id: int = None, f_msg_id: int = None, s_msg_id: int =
         raise ValueError("All IDs must be integers")
     
     # Apply *8 multiplication
-    channel_id_encoded = channel_id * 8
-    f_msg_id_encoded = f_msg_id * 8
-    s_msg_id_encoded = s_msg_id * 8 if s_msg_id is not None else None
+    channel_id_encoded = channel_id * 43
+    f_msg_id_encoded = f_msg_id * 43
+    s_msg_id_encoded = s_msg_id * 43 if s_msg_id is not None else None
     
     # Create the string to encode
     if user_id is not None and s_msg_id is None:
@@ -219,13 +219,13 @@ async def decode_link(encoded_string: str) -> Tuple[str, Union[int, None], int, 
             raise ValueError("Invalid HACKHEIST string structure")
         try:
             user_id = int(parts[1])
-            f_msg_id = int(parts[2]) // 8
+            f_msg_id = int(parts[2]) // 43
             if len(parts) == 5 and parts[3] == "":
                 # Negative channel_id: HACKHEIST-user_id-f_msg_id_encoded--channel_id_encoded
-                channel_id = int(f"-{parts[4]}") // 8
+                channel_id = int(f"-{parts[4]}") // 43
             else:
                 # Positive channel_id: HACKHEIST-user_id-f_msg_id_encoded-channel_id_encoded
-                channel_id = int(parts[3]) // 8
+                channel_id = int(parts[3]) // 43
             return "HACKHEIST", user_id, f_msg_id, channel_id, None
         except ValueError:
             raise ValueError("Invalid number format in HACKHEIST string")
@@ -236,23 +236,23 @@ async def decode_link(encoded_string: str) -> Tuple[str, Union[int, None], int, 
         try:
             if len(parts) == 5 and parts[1] == "":
                 # Negative channel_id: get--channel_id_encoded-f_msg_id_encoded-s_msg_id_encoded
-                channel_id = int(f"-{parts[2]}") // 8
-                f_msg_id = int(parts[3]) // 8
-                s_msg_id = int(parts[4]) // 8
+                channel_id = int(f"-{parts[2]}") // 43
+                f_msg_id = int(parts[3]) // 43
+                s_msg_id = int(parts[4]) // 43
             elif len(parts) == 4 and parts[1] != "":
                 # Positive channel_id: get-channel_id_encoded-f_msg_id_encoded-s_msg_id_encoded
-                channel_id = int(parts[1]) // 8
-                f_msg_id = int(parts[2]) // 8
-                s_msg_id = int(parts[3]) // 8
+                channel_id = int(parts[1]) // 43
+                f_msg_id = int(parts[2]) // 43
+                s_msg_id = int(parts[3]) // 43
             elif len(parts) == 4 and parts[1] == "":
                 # Negative channel_id, single message: get--channel_id_encoded-f_msg_id_encoded
-                channel_id = int(f"-{parts[2]}") // 8
-                f_msg_id = int(parts[3]) // 8
+                channel_id = int(f"-{parts[2]}") // 43
+                f_msg_id = int(parts[3]) // 43
                 s_msg_id = None
             elif len(parts) == 3:
                 # Positive channel_id, single message: get-channel_id_encoded-f_msg_id_encoded
-                channel_id = int(parts[1]) // 8
-                f_msg_id = int(parts[2]) // 8
+                channel_id = int(parts[1]) // 43
+                f_msg_id = int(parts[2]) // 43
                 s_msg_id = None
             else:
                 raise ValueError("Invalid batch string structure")
