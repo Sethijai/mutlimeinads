@@ -185,7 +185,7 @@ async def encode_link(user_id: int = None, f_msg_id: int = None, s_msg_id: int =
     base64_bytes = base64.urlsafe_b64encode(string_bytes)
     base64_string = base64_bytes.decode("ascii").rstrip("=")
     
-    return f"https://t.me/AK_LECTURES_BOT?start={base64_string}"
+    return f"{base64_string}"
 
 async def decode_link(encoded_string: str) -> Tuple[str, Union[int, None], int, int, Union[int, None]]:
     """
