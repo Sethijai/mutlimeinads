@@ -240,9 +240,6 @@ async def decode_link(encoded_string: str) -> Tuple[str, Union[int, None], int, 
     else:
         raise ValueError("Invalid encoded string format")
 
-    else:
-        raise ValueError("Invalid encoded string format")
-
 
 async def get_messages(client, message_ids, channel_id):
     """
