@@ -5,7 +5,7 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from bot import Bot
 from pyrogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from asyncio import TimeoutError
-from helper_func import encode, get_message_id, encode_link
+from helper_func import encode, get_message_id, encode_link, decode_link
 from config import *
 
 
