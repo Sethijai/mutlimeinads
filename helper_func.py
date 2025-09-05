@@ -143,7 +143,6 @@ async def decode_new(base64_string2):
         print(f"Decode_new error: {e}")
         raise
 
- 
 async def encode_link(user_id: int = None, f_msg_id: int = None, s_msg_id: int = None, channel_id: int = None) -> str:
     """
     Encode a Telegram bot deep link for batch or HACKHEIST access with *8 multiplication.
@@ -185,7 +184,7 @@ async def encode_link(user_id: int = None, f_msg_id: int = None, s_msg_id: int =
     base64_bytes = base64.urlsafe_b64encode(string_bytes)
     base64_string = base64_bytes.decode("ascii").rstrip("=")
     
-    return f"{base64_string}"
+    return f"https://t.me/AK_LECTURES_BOT?start={base64_string}"
 
 async def decode_link(encoded_string: str) -> Tuple[str, Union[int, None], int, int, Union[int, None]]:
     """
@@ -216,12 +215,17 @@ async def decode_link(encoded_string: str) -> Tuple[str, Union[int, None], int, 
     parts = decoded_string.split("-")
     
     if decoded_string.startswith("HACKHEIST-"):
-        if len(parts) != 4:
+        if len(parts) not in [4, 5]:
             raise ValueError("Invalid HACKHEIST string structure")
         try:
             user_id = int(parts[1])
             f_msg_id = int(parts[2]) // 8
-            channel_id = int(parts[3]) // 8
+            if len(parts) == 5 and parts[3] == "":
+                # Negative channel_id: HACKHEIST-user_id-f_msg_id_encoded--channel_id_encoded
+                channel_id = int(f"-{parts[4]}") // 8
+            else:
+                # Positive channel_id: HACKHEIST-user_id-f_msg_id_encoded-channel_id_encoded
+                channel_id = int(parts[3]) // 8
             return "HACKHEIST", user_id, f_msg_id, channel_id, None
         except ValueError:
             raise ValueError("Invalid number format in HACKHEIST string")
@@ -258,7 +262,6 @@ async def decode_link(encoded_string: str) -> Tuple[str, Union[int, None], int, 
     
     else:
         raise ValueError("Invalid encoded string format")
-
 
 
 async def get_messages(client, message_ids, channel_id):
