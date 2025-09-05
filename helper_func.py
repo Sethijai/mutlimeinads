@@ -227,18 +227,38 @@ async def decode_link(encoded_string: str) -> Tuple[str, Union[int, None], int, 
             raise ValueError("Invalid number format in HACKHEIST string")
     
     elif decoded_string.startswith("get-"):
-        if len(parts) not in [3, 4]:
+        if len(parts) not in [3, 4, 5]:
             raise ValueError("Invalid batch string structure")
         try:
-            channel_id = int(parts[1]) // 8
-            f_msg_id = int(parts[2]) // 8
-            s_msg_id = int(parts[3]) // 8 if len(parts) == 4 else None
+            if len(parts) == 5 and parts[1] == "":
+                # Negative channel_id: get--channel_id_encoded-f_msg_id_encoded-s_msg_id_encoded
+                channel_id = int(f"-{parts[2]}") // 8
+                f_msg_id = int(parts[3]) // 8
+                s_msg_id = int(parts[4]) // 8
+            elif len(parts) == 4 and parts[1] != "":
+                # Positive channel_id: get-channel_id_encoded-f_msg_id_encoded-s_msg_id_encoded
+                channel_id = int(parts[1]) // 8
+                f_msg_id = int(parts[2]) // 8
+                s_msg_id = int(parts[3]) // 8
+            elif len(parts) == 4 and parts[1] == "":
+                # Negative channel_id, single message: get--channel_id_encoded-f_msg_id_encoded
+                channel_id = int(f"-{parts[2]}") // 8
+                f_msg_id = int(parts[3]) // 8
+                s_msg_id = None
+            elif len(parts) == 3:
+                # Positive channel_id, single message: get-channel_id_encoded-f_msg_id_encoded
+                channel_id = int(parts[1]) // 8
+                f_msg_id = int(parts[2]) // 8
+                s_msg_id = None
+            else:
+                raise ValueError("Invalid batch string structure")
             return "batch", None, f_msg_id, channel_id, s_msg_id
         except ValueError:
             raise ValueError("Invalid number format in batch string")
     
     else:
         raise ValueError("Invalid encoded string format")
+
 
 
 async def get_messages(client, message_ids, channel_id):
