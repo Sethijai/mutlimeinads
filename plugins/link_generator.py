@@ -8,83 +8,84 @@ from asyncio import TimeoutError
 from helper_func import encode, get_message_id, encode_link, decode_link
 from config import *
 
-
-@Client.on_message(filters.private & filters.user(ADMINS) & filters.command('batch'))
+@Bot.on_message(filters.private & filters.user(ADMINS) & filters.command('batch'))
 async def batch(client: Client, message: Message):
+    """
+    Generate a Telegram deep link for a batch of messages from a DB channel.
+    The link is encoded with *8 multiplication and base64 for obfuscation.
+    """
     # Get the first message
     while True:
         try:
             first_message = await client.ask(
-                text="Forward the First Message from DB Channel (with Quotes)..\n\nor Send the DB Channel Post Link",
+                text="Forward the First Message from DB Channel (with Quotes) or send the DB Channel Post Link",
                 chat_id=message.from_user.id,
                 filters=(filters.forwarded | (filters.text & ~filters.forwarded)),
                 timeout=60
             )
-        except:
+        except Exception as e:
+            await message.reply_text(f"❌ Error: Failed to receive the first message. {str(e)}", quote=True)
             return
-
         f_channel_id, f_msg_id = await get_message_id(client, first_message)
         if f_channel_id and f_msg_id:
             break
         else:
-            await first_message.reply(
-                "❌ Error\n\nThis is not a valid forwarded post or link from a Telegram channel.",
+            await first_message.reply_text(
+                "❌ Error: This is not a valid forwarded post or link from a Telegram channel.",
                 quote=True
             )
-            continue
 
     # Get the second message
     while True:
         try:
             second_message = await client.ask(
-                text="Forward the Last Message from DB Channel (with Quotes)..\nor Send the DB Channel Post Link",
+                text="Forward the Last Message from DB Channel (with Quotes) or send the DB Channel Post Link",
                 chat_id=message.from_user.id,
                 filters=(filters.forwarded | (filters.text & ~filters.forwarded)),
                 timeout=60
             )
-        except:
+        except Exception as e:
+            await message.reply_text(f"❌ Error: Failed to receive the second message. {str(e)}", quote=True)
             return
-
         s_channel_id, s_msg_id = await get_message_id(client, second_message)
         if s_channel_id and s_msg_id:
             if s_channel_id == f_channel_id:
+                # Validate message range
+                if s_msg_id < f_msg_id:
+                    await second_message.reply_text(
+                        "❌ Error: The last message ID must be greater than or equal to the first message ID.",
+                        quote=True
+                    )
+                    continue
                 break
             else:
-                await second_message.reply(
-                    "❌ Error\n\nThe second message must be from the same channel as the first message.",
+                await second_message.reply_text(
+                    "❌ Error: The second message must be from the same channel as the first message.",
                     quote=True
                 )
-                continue
         else:
-            await second_message.reply(
-                "❌ Error\n\nThis is not a valid forwarded post or link from a Telegram channel.",
+            await second_message.reply_text(
+                "❌ Error: This is not a valid forwarded post or link from a Telegram channel.",
                 quote=True
             )
-            continue
 
-    # Generate the link
-    link = await encode_link(f_msg_id=f_msg_id, s_msg_id=s_msg_id, channel_id=f_channel_id)
+    # Generate the link using encode_link with *8
+    try:
+        link = await encode_link(f_msg_id=f_msg_id, s_msg_id=s_msg_id, channel_id=f_channel_id)
+        print(f"Generated batch link: {link}")  # Debug
+        reply_markup = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🔁 Share URL", url=f'https://telegram.me/share/url?url={link}')]
+        ])
+        await second_message.reply_text(
+            f"<b>Here is your batch link</b>\n\n{link}",
+            quote=True,
+            reply_markup=reply_markup
+        )
+    except ValueError as e:
+        await second_message.reply_text(f"❌ Error generating link: {str(e)}", quote=True)
+    except Exception as e:
+        await second_message.reply_text(f"❌ Unexpected error: {str(e)}", quote=True)
 
-    # Debugging (see raw + decoded values in logs)
-    print(f"Generated batch link: {link}")
-    raw_encoded = link.split("start=")[1]
-    decoded = await decode_link(raw_encoded)
-    print(f"Raw Encoded String: {raw_encoded}")
-    print(f"Decoded Values: {decoded}")
-
-    # Send to user
-    reply_markup = InlineKeyboardMarkup(
-        [[InlineKeyboardButton("🔁 Share URL", url=f'https://telegram.me/share/url?url={link}')]]
-    )
-    await second_message.reply_text(
-        f"<b>Here is your link</b>\n\n{link}",
-        quote=True,
-        reply_markup=reply_markup
-    )
-
-
-# Don't Remove Credit @CodeFlix_Bots, @rohit_1888
-# Ask Doubt on telegram @CodeflixSupport
 
 @Bot.on_message(filters.private & filters.user(ADMINS) & filters.command('genlink'))
 async def link_generator(client: Client, message: Message):
