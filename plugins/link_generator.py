@@ -77,7 +77,7 @@ async def batch(client: Client, message: Message):
             [InlineKeyboardButton("🔁 Share URL", url=f'https://telegram.me/share/url?url={link}')]
         ])
         await second_message.reply_text(
-            f"<b>Here is your batch link</b>\n\n{link}",
+            f"<b>Here is your batch link</b>\n\nhttps://t.me/{client.username}?start={link}",
             quote=True,
             reply_markup=reply_markup
         )
