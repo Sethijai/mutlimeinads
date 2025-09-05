@@ -112,11 +112,6 @@ async def is_subscribed(filter, client, update):
     else:
         return True
 
-import base64
-import re
-import asyncio
-from pyrogram.errors import FloodWait, ChannelInvalid, ChatAdminRequired, MessageIdsInvalid
-from typing import Tuple, Union
 
 async def encode(string):
     string_bytes = string.encode("ascii")
