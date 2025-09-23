@@ -6,7 +6,7 @@ import humanize
 from pyrogram import Client, filters, __version__
 from pyrogram.enums import ParseMode
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, ChannelInvalid, PeerIdInvalid
+from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, ChannelInvalid, PeerIdInvalid, MessageIdsInvalid, ChatAdminRequired
 from bot import Bot
 from config import *
 from helper_func import subscribed, encode_link, decode_link, get_messages
@@ -260,9 +260,9 @@ async def start_command(client: Client, message: Message):
             k = await client.send_message(
                 chat_id=message.from_user.id,
                 text=f"<b>🔥 Hurry! These Lectures/PDFs will be <u>deleted automatically in 4 hours</u> ⏳</b>\n\n"
-                     f"<b>𝘚𝘰 𝘍𝘰𝘳 𝘚𝘢𝘷𝘪𝘯𝘨 𝘓𝘦𝘤𝘵𝘶𝘳𝘦/𝘗𝘥𝘧 𝘤𝘭𝘪𝘤𝘬 𝘰𝘯 𝘣𝘦𝘭𝘰𝘸 𝘣𝘶𝘵𝘵𝘰𝘯(😁 𝗖𝗟𝗜𝗖𝗞 𝗧𝗢 𝗦𝗔𝗩𝗘 📥) then 𝘠𝘰𝘶 𝘤𝘢𝘯 𝘚𝘢𝘷𝘦 𝘪𝘯 𝘎𝘢𝘭𝘭𝘦𝘳𝘺 😊</b>\n\n"
+                     f"<b>𝘚𝘰 𝘍𝘰𝘳 𝘚𝘢𝘷𝘪𝘯𝘨 𝘓𝘦𝘤𝘵𝘶𝘳𝘦/𝘗𝘥𝘧 𝘤𝘭𝘪𝘤𝘬 𝘰𝘯 𝘣𝘦𝘭𝘰𝘸 𝘣𝘶𝘵𝘵𝘰𝘯(😁 𝗖𝗟𝗜𝗖𝗞 𝗧𝗢 𝗦𝗔𝗩𝗘 📥) then �Y𝘰𝘶 𝘤𝘢𝘯 𝘚𝘢𝘷𝘦 𝘪𝘯 𝘎𝘢𝘭𝘭𝘦𝘳𝘺 😊</b>\n\n"
                      f"<b>😎 Don’t worry! Even after deletion, you can still re-access everything anytime through our websites 😘</b>\n\n"
-                     f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗩𝗶𝘀𝗶𝘁 �_M𝗼𝗿𝗲 𝗪𝗲𝗯𝘀𝗶𝘁𝗲𝘀 🌟</a></b>",
+                     f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗩𝗶𝘀𝗶𝘁 𝗠𝗼𝗿𝗲 𝗪𝗲𝗯𝘀𝗶𝘁𝗲𝘀 🌟</a></b>",
             )
 
             codeflix_msgs.append(k)
@@ -403,17 +403,17 @@ async def add_random_message(client: Bot, message: Message):
     try:
         # Extract message link
         link = message.text.split(maxsplit=1)[1]
-        if not link.startswith("https://t.me/c/"):
-            await message.reply("❌ Please provide a valid Telegram message link (https://t.me/c/...)")
+        if not link.startswith("-100"):
+            await message.reply("❌ Please provide a valid link format (-100{channel_id}:{msg_id})")
             return
         
-        # Parse link: https://t.me/c/2493255368/46223
-        parts = link.split('/')
-        if len(parts) < 6:
-            await message.reply("❌ Invalid link format. Expected: https://t.me/c/channel_id/message_id")
+        # Parse link: -1002493255368:46223
+        parts = link.split(':')
+        if len(parts) != 2 or not parts[0].startswith("-100"):
+            await message.reply("❌ Invalid link format. Expected: -100{channel_id}:{msg_id}")
             return
-        channel_id = parts[4]
-        msg_id = int(parts[5])
+        channel_id = parts[0][4:]  # Remove -100 prefix
+        msg_id = int(parts[1])
 
         # Validate message existence (optional, skip in offline mode)
         try:
@@ -421,16 +421,15 @@ async def add_random_message(client: Bot, message: Message):
             if not messages or messages[0] is None:
                 await message.reply(f"❌ Message {msg_id} in channel {channel_id} is inaccessible or does not exist")
                 return
-        except (ChannelInvalid, PeerIdInvalid):
-            await message.reply(f"❌ Invalid channel ID: {channel_id}. Ensure the bot has access to the channel.")
-            return
+        except (ChannelInvalid, PeerIdInvalid, ChatAdminRequired, MessageIdsInvalid):
+            await message.reply(f"❌ Failed to validate message in channel {channel_id}. Adding anyway (offline mode).")
         except Exception as e:
             await message.reply(f"❌ Failed to validate message: {str(e)}. Adding anyway (offline mode).")
             # Proceed to add even if validation fails (offline scenario)
 
         # Add to database
         await add_random_message(channel_id, msg_id)
-        await message.reply(f"✅ Added message {link} to random messages")
+        await message.reply(f"✅ Added message -100{channel_id}:{msg_id} to random messages")
     except IndexError:
         await message.reply("❌ Please provide a message link after the command")
     except ValueError:
@@ -443,20 +442,20 @@ async def remove_random_message(client: Bot, message: Message):
     try:
         # Extract message link
         link = message.text.split(maxsplit=1)[1]
-        if not link.startswith("https://t.me/c/"):
-            await message.reply("❌ Please provide a valid Telegram message link (https://t.me/c/...)")
+        if not link.startswith("-100"):
+            await message.reply("❌ Please provide a valid link format (-100{channel_id}:{msg_id})")
             return
         
-        # Parse link: https://t.me/c/2493255368/46223
-        parts = link.split('/')
-        if len(parts) < 6:
-            await message.reply("❌ Invalid link format. Expected: https://t.me/c/channel_id/message_id")
+        # Parse link: -1002493255368:46223
+        parts = link.split(':')
+        if len(parts) != 2 or not parts[0].startswith("-100"):
+            await message.reply("❌ Invalid link format. Expected: -100{channel_id}:{msg_id}")
             return
-        channel_id = parts[4]
-        msg_id = int(parts[5])
+        channel_id = parts[0][4:]  # Remove -100 prefix
+        msg_id = int(parts[1])
         
         await remove_random_message(channel_id, msg_id)
-        await message.reply(f"✅ Removed message {link} from random messages")
+        await message.reply(f"✅ Removed message -100{channel_id}:{msg_id} from random messages")
     except IndexError:
         await message.reply("❌ Please provide a message link after the command")
     except ValueError:
