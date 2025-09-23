@@ -6,7 +6,7 @@ import humanize
 from pyrogram import Client, filters, __version__
 from pyrogram.enums import ParseMode
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated
+from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, ChannelInvalid, PeerIdInvalid
 from bot import Bot
 from config import *
 from helper_func import subscribed, encode_link, decode_link, get_messages
@@ -153,12 +153,12 @@ async def start_command(client: Client, message: Message):
             else:
                 ids = [f_msg_id]
 
-            temp_msg = await message.reply("�_R𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
+            temp_msg = await message.reply("𝗥𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
             try:
                 messages = await get_messages(client, ids, channel_id)
                 print(f"Fetched {len(messages)} messages for channel_id={channel_id}, ids={ids}")
                 if not messages or all(msg is None for msg in messages):
-                    await temp_msg.edit("Failed to fetch messages. They may have been deleted or are inaccessible.")
+                    await temp_msg.edit("Failed to fetch messages. They may have been deleted or is inaccessible.")
                     return
             except Exception as e:
                 await temp_msg.edit(f"Something went wrong: {str(e)}")
@@ -262,7 +262,7 @@ async def start_command(client: Client, message: Message):
                 text=f"<b>🔥 Hurry! These Lectures/PDFs will be <u>deleted automatically in 4 hours</u> ⏳</b>\n\n"
                      f"<b>𝘚𝘰 𝘍𝘰𝘳 𝘚𝘢𝘷𝘪𝘯𝘨 𝘓𝘦𝘤𝘵𝘶𝘳𝘦/𝘗𝘥𝘧 𝘤𝘭𝘪𝘤𝘬 𝘰𝘯 𝘣𝘦𝘭𝘰𝘸 𝘣𝘶𝘵𝘵𝘰𝘯(😁 𝗖𝗟𝗜𝗖𝗞 𝗧𝗢 𝗦𝗔𝗩𝗘 📥) then 𝘠𝘰𝘶 𝘤𝘢𝘯 𝘚𝘢𝘷𝘦 𝘪𝘯 𝘎𝘢𝘭𝘭𝘦𝘳𝘺 😊</b>\n\n"
                      f"<b>😎 Don’t worry! Even after deletion, you can still re-access everything anytime through our websites 😘</b>\n\n"
-                     f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗩𝗶𝘀𝗶𝘁 𝗠𝗼𝗿𝗲 𝗪𝗲𝗯𝘀𝗶𝘁𝗲𝘀 🌟</a></b>",
+                     f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗩𝗶𝘀𝗶𝘁 �_M𝗼𝗿𝗲 𝗪𝗲𝗯𝘀𝗶𝘁𝗲𝘀 🌟</a></b>",
             )
 
             codeflix_msgs.append(k)
@@ -407,11 +407,28 @@ async def add_random_message(client: Bot, message: Message):
             await message.reply("❌ Please provide a valid Telegram message link (https://t.me/c/...)")
             return
         
-        # Parse link: https://t.me/c/23458289/msg_id
+        # Parse link: https://t.me/c/2493255368/46223
         parts = link.split('/')
+        if len(parts) < 6:
+            await message.reply("❌ Invalid link format. Expected: https://t.me/c/channel_id/message_id")
+            return
         channel_id = parts[4]
         msg_id = int(parts[5])
-        
+
+        # Validate message existence (optional, skip in offline mode)
+        try:
+            messages = await get_messages(client, [msg_id], channel_id)
+            if not messages or messages[0] is None:
+                await message.reply(f"❌ Message {msg_id} in channel {channel_id} is inaccessible or does not exist")
+                return
+        except (ChannelInvalid, PeerIdInvalid):
+            await message.reply(f"❌ Invalid channel ID: {channel_id}. Ensure the bot has access to the channel.")
+            return
+        except Exception as e:
+            await message.reply(f"❌ Failed to validate message: {str(e)}. Adding anyway (offline mode).")
+            # Proceed to add even if validation fails (offline scenario)
+
+        # Add to database
         await add_random_message(channel_id, msg_id)
         await message.reply(f"✅ Added message {link} to random messages")
     except IndexError:
@@ -430,8 +447,11 @@ async def remove_random_message(client: Bot, message: Message):
             await message.reply("❌ Please provide a valid Telegram message link (https://t.me/c/...)")
             return
         
-        # Parse link: https://t.me/c/23458289/msg_id
+        # Parse link: https://t.me/c/2493255368/46223
         parts = link.split('/')
+        if len(parts) < 6:
+            await message.reply("❌ Invalid link format. Expected: https://t.me/c/channel_id/message_id")
+            return
         channel_id = parts[4]
         msg_id = int(parts[5])
         
