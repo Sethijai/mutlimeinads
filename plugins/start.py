@@ -25,7 +25,7 @@ file_auto_delete = humanize.naturaldelta(subaru)
 
 async def send_random_special_message(client: Client, chat_id: int):
     """
-    Send a random special message (sticker) to the specified chat.
+    Send a random special message (any type: sticker, photo, video, document, text, etc.) to the specified chat.
     Returns the sent message object or None if no message was sent.
     """
     special_msg_ids = await get_special_messages()
@@ -36,15 +36,52 @@ async def send_random_special_message(client: Client, chat_id: int):
     try:
         special_msg = await client.get_messages(client.db_channel.id, random_msg_id)
         if not special_msg:
+            print(f"Special message {random_msg_id} not found.")
             return None
+
+        # Prepare caption (use original caption or None if absent)
+        caption = special_msg.caption.html if special_msg.caption else None
+        parse_mode = ParseMode.HTML if caption else None
+
+        # Handle different message types
         if special_msg.sticker:
             special_copied_msg = await client.send_sticker(
                 chat_id=chat_id,
                 sticker=special_msg.sticker.file_id
             )
-            return special_copied_msg
+        elif special_msg.photo:
+            special_copied_msg = await client.send_photo(
+                chat_id=chat_id,
+                photo=special_msg.photo.file_id,
+                caption=caption,
+                parse_mode=parse_mode
+            )
+        elif special_msg.video:
+            special_copied_msg = await client.send_video(
+                chat_id=chat_id,
+                video=special_msg.video.file_id,
+                caption=caption,
+                parse_mode=parse_mode
+            )
+        elif special_msg.document:
+            special_copied_msg = await client.send_document(
+                chat_id=chat_id,
+                document=special_msg.document.file_id,
+                caption=caption,
+                parse_mode=parse_mode
+            )
+        elif special_msg.text:
+            special_copied_msg = await client.send_message(
+                chat_id=chat_id,
+                text=special_msg.text,
+                parse_mode=ParseMode.HTML if special_msg.text.html else None
+            )
         else:
+            print(f"Unsupported message type for special message {random_msg_id}")
             return None
+
+        return special_copied_msg
+
     except (ChannelInvalid, PeerIdInvalid, BadRequest, Exception) as e:
         print(f"Failed to fetch/send special message {random_msg_id}: {e}")
         return None
