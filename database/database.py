@@ -1,225 +1,54 @@
-import pymongo
-import motor, asyncio
-import time
-from typing import Tuple  # For Python 3.8 compatibility
-from config import *
+import pymongo, os
+from config import DB_URI, DB_NAME
 
 dbclient = pymongo.MongoClient(DB_URI)
 database = dbclient[DB_NAME]
-
 user_data = database['users']
-premium_users = database['premiumusers']
+special_messages = database['special_messages']
 
-async def present_user(user_id: int) -> bool:
-    """
-    Check if a user exists in the users collection.
-    """
+async def present_user(user_id: int):
     found = user_data.find_one({'_id': user_id})
     return bool(found)
 
-async def add_user(user_id: int) -> None:
-    """
-    Add a user to the users collection.
-    """
+async def add_user(user_id: int):
     user_data.insert_one({'_id': user_id})
+    return
 
-async def full_userbase() -> list:
-    """
-    Get all user IDs from the users collection.
-    """
+async def full_userbase():
     user_docs = user_data.find()
-    user_ids = [doc['_id'] for doc in user_docs]
+    user_ids = []
+    for doc in user_docs:
+        user_ids.append(doc['_id'])
     return user_ids
 
-async def del_user(user_id: int) -> None:
-    """
-    Delete a user from the users collection.
-    """
+async def del_user(user_id: int):
     user_data.delete_one({'_id': user_id})
+    return
 
-async def add_premium_user(user_id: int, duration: int) -> None:
+async def add_special_message(msg_id: int):
     """
-    Add a user as premium with an expiration time (duration in seconds from command time).
-    Stores expiration_time as current timestamp + duration.
+    Add a message ID to the special messages collection.
     """
-    expiration_time = int(time.time()) + duration
-    premium_users.update_one(
-        {'_id': user_id},
-        {'$set': {'expiration_time': expiration_time}},
+    special_messages.update_one(
+        {'_id': 'special_msg_ids'},
+        {'$addToSet': {'msg_ids': msg_id}},
         upsert=True
     )
-    print(f"Added premium for user {user_id}: expiration_time={expiration_time}")
+    return
 
-async def add_all_premium(duration: int) -> None:
+async def remove_special_message(msg_id: int):
     """
-    Set all users as premium for the specified duration (in seconds from command time).
-    Stores a global expiration time for 'All' users.
+    Remove a message ID from the special messages collection.
     """
-    expiration_time = int(time.time()) + duration
-    premium_users.update_one(
-        {'_id': 'All'},
-        {'$set': {'expiration_time': expiration_time}},
-        upsert=True
+    special_messages.update_one(
+        {'_id': 'special_msg_ids'},
+        {'$pull': {'msg_ids': msg_id}}
     )
-    print(f"Added All premium: expiration_time={expiration_time}")
+    return
 
-async def remove_premium_user(user_id: int) -> None:
+async def get_special_messages():
     """
-    Remove a user's premium status.
+    Retrieve all special message IDs.
     """
-    premium_users.delete_one({'_id': user_id})
-    print(f"Removed premium for user {user_id}")
-
-async def is_premium_user(user_id: int) -> Tuple[bool, int]:
-    """
-    Check if a user is premium by comparing current time to expiration time.
-    Returns (is_premium, remaining_time).
-    is_premium is True only if remaining_time > 0.
-    """
-    current_time = int(time.time())
-    
-    # Check individual premium status
-    user_doc = premium_users.find_one({'_id': user_id})
-    if user_doc and 'expiration_time' in user_doc:
-        remaining_time = user_doc['expiration_time'] - current_time
-        print(f"User {user_id} check: expiration_time={user_doc['expiration_time']}, remaining_time={remaining_time}")
-        if remaining_time > 0:
-            return True, remaining_time
-    
-    # Check global 'All' premium status
-    all_doc = premium_users.find_one({'_id': 'All'})
-    if all_doc and 'expiration_time' in all_doc:
-        remaining_time = all_doc['expiration_time'] - current_time
-        print(f"All premium check: expiration_time={all_doc['expiration_time']}, remaining_time={remaining_time}")
-        if remaining_time > 0:
-            return True, remaining_time
-    
-    print(f"User {user_id} is not premium: no valid premium entry found")
-    return False, 0
-
-async def list_premium_users() -> list:
-    """
-    List all premium users and their remaining time (in seconds).
-    Returns a list of tuples: [(user_id, remaining_time), ...].
-    Includes 'All' if active.
-    """
-    premium_docs = premium_users.find()
-    current_time = int(time.time())
-    premium_list = []
-    
-    for doc in premium_docs:
-        user_id = doc['_id']
-        remaining_time = doc['expiration_time'] - current_time if 'expiration_time' in doc else 0
-        if remaining_time > 0:
-            premium_list.append((user_id, remaining_time))
-    
-    print(f"Premium users list: {premium_list}")
-    return premium_list
-    
-
-
-
-class Rohit:
-
-    def __init__(self, DB_URI, DB_NAME, TG_BOT_TOKEN):
-        self.dbclient = motor.motor_asyncio.AsyncIOMotorClient(DB_URI)
-        self.database = self.dbclient[DB_NAME]
-
-        self.channel_data = self.database[f'channels{TG_BOT_TOKEN}']
-        self.fsub_data = self.database[f'fsub{TG_BOT_TOKEN}']   
-        self.rqst_fsub_data = self.database[f'request_forcesub{TG_BOT_TOKEN}']
-        self.rqst_fsub_Channel_data = self.database[f'request_forcesub_channel{TG_BOT_TOKEN}']
-       
-        
-
-
- 
-    # CHANNEL MANAGEMENT
-    async def channel_exist(self, channel_id: int):
-        found = await self.fsub_data.find_one({'_id': channel_id})
-        return bool(found)
-
-    async def add_channel(self, channel_id: int):
-        if not await self.channel_exist(channel_id):
-            await self.fsub_data.insert_one({'_id': channel_id})
-            return
-
-    async def rem_channel(self, channel_id: int):
-        if await self.channel_exist(channel_id):
-            await self.fsub_data.delete_one({'_id': channel_id})
-            return
-
-    async def show_channels(self):
-        channel_docs = await self.fsub_data.find().to_list(length=None)
-        channel_ids = [doc['_id'] for doc in channel_docs]
-        return channel_ids
-
-    
-# Get current mode of a channel
-    async def get_channel_mode(self, channel_id: int):
-        data = await self.fsub_data.find_one({'_id': channel_id})
-        return data.get("mode", "off") if data else "off"
-
-    # Set mode of a channel
-    async def set_channel_mode(self, channel_id: int, mode: str):
-        await self.fsub_data.update_one(
-            {'_id': channel_id},
-            {'$set': {'mode': mode}},
-            upsert=True
-        )
-
-    # REQUEST FORCE-SUB MANAGEMENT
-
-    # Add the user to the set of users for a   specific channel
-    async def req_user(self, channel_id: int, user_id: int):
-        try:
-            await self.rqst_fsub_Channel_data.update_one(
-                {'_id': int(channel_id)},
-                {'$addToSet': {'user_ids': int(user_id)}},
-                upsert=True
-            )
-        except Exception as e:
-            print(f"[DB ERROR] Failed to add user to request list: {e}")
-
-
-    # Method 2: Remove a user from the channel set
-    async def del_req_user(self, channel_id: int, user_id: int):
-        # Remove the user from the set of users for the channel
-        await self.rqst_fsub_Channel_data.update_one(
-            {'_id': channel_id}, 
-            {'$pull': {'user_ids': user_id}}
-        )
-
-    # Check if the user exists in the set of the channel's users
-    async def req_user_exist(self, channel_id: int, user_id: int):
-        try:
-            found = await self.rqst_fsub_Channel_data.find_one({
-                '_id': int(channel_id),
-                'user_ids': int(user_id)
-            })
-            return bool(found)
-        except Exception as e:
-            print(f"[DB ERROR] Failed to check request list: {e}")
-            return False  
-
-
-    # Method to check if a channel exists using show_channels
-    async def reqChannel_exist(self, channel_id: int):
-    # Get the list of all channel IDs from the database
-        channel_ids = await self.show_channels()
-        #print(f"All channel IDs in the database: {channel_ids}")
-
-    # Check if the given channel_id is in the list of channel IDs
-        if channel_id in channel_ids:
-            #print(f"Channel {channel_id} found in the database.")
-            return True
-        else:
-            #print(f"Channel {channel_id} NOT found in the database.")
-            return False
-
-
-
-
-
-
-db = Rohit(DB_URI, DB_NAME, TG_BOT_TOKEN)
+    doc = special_messages.find_one({'_id': 'special_msg_ids'})
+    return doc['msg_ids'] if doc and 'msg_ids' in doc else []
