@@ -1,4 +1,3 @@
-# start.py
 import random
 import os
 import asyncio
@@ -6,11 +5,12 @@ import humanize
 from pyrogram import Client, filters, __version__
 from pyrogram.enums import ParseMode
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, ChannelInvalid, PeerIdInvalid, MessageIdsInvalid, ChatAdminRequired
+from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, ChannelInvalid, PeerIdInvalid, ChatAdminRequired
+from pyrogram.errors.exceptions.bad_request_400 import BadRequest
 from bot import Bot
 from config import *
 from helper_func import subscribed, encode_link, decode_link, get_messages
-from database.database import add_user, del_user, full_userbase, present_user, add_random_message, remove_random_message, get_all_random_messages
+from database.database import add_user, del_user, full_userbase, present_user, add_special_message, remove_special_message, get_special_messages
 
 # Different delete times for different access types
 BULK_DELETE_TIME = FILE_AUTO_DELETE
@@ -22,6 +22,32 @@ except NameError:
 codeflixbots = FILE_AUTO_DELETE
 subaru = codeflixbots
 file_auto_delete = humanize.naturaldelta(subaru)
+
+async def send_random_special_message(client: Client, chat_id: int):
+    """
+    Send a random special message (sticker) to the specified chat.
+    Returns the sent message object or None if no message was sent.
+    """
+    special_msg_ids = await get_special_messages()
+    if not special_msg_ids:
+        return None
+
+    random_msg_id = random.choice(special_msg_ids)
+    try:
+        special_msg = await client.get_messages(client.db_channel.id, random_msg_id)
+        if not special_msg:
+            return None
+        if special_msg.sticker:
+            special_copied_msg = await client.send_sticker(
+                chat_id=chat_id,
+                sticker=special_msg.sticker.file_id
+            )
+            return special_copied_msg
+        else:
+            return None
+    except (ChannelInvalid, PeerIdInvalid, BadRequest, Exception) as e:
+        print(f"Failed to fetch/send special message {random_msg_id}: {e}")
+        return None
 
 @Bot.on_message(filters.command('start') & filters.private & subscribed)
 async def start_command(client: Client, message: Message):
@@ -40,6 +66,7 @@ async def start_command(client: Client, message: Message):
         except IndexError:
             return
 
+        # Decode the link using decode_link
         try:
             link_type, user_id, f_msg_id, channel_id, s_msg_id = await decode_link(base64_string)
             print(f"Decoded link: type={link_type}, user_id={user_id}, f_msg_id={f_msg_id}, channel_id={channel_id}, s_msg_id={s_msg_id}")
@@ -50,6 +77,7 @@ async def start_command(client: Client, message: Message):
             await message.reply_text(f"❌ Error decoding link: {str(e)}")
             return
 
+        # Handle HACKHEIST link
         if link_type == "HACKHEIST":
             if message.from_user.id != user_id:
                 await message.reply_text("❌ You are not authorized to access this content!")
@@ -61,13 +89,14 @@ async def start_command(client: Client, message: Message):
                 if not messages or all(msg is None for msg in messages):
                     await temp_msg.edit("Failed to fetch message. It may have been deleted or is inaccessible.")
                     return
-            except Exception as e:
+            except (ChannelInvalid, PeerIdInvalid, BadRequest, Exception) as e:
                 await temp_msg.edit(f"Something went wrong: {str(e)}")
                 print(f"Error getting message {f_msg_id} from {channel_id}: {e}")
                 return
             finally:
                 await temp_msg.delete()
 
+            # Send the individual message with protect_content = False
             codeflix_msgs = []
             for msg in messages:
                 if not msg:
@@ -88,6 +117,7 @@ async def start_command(client: Client, message: Message):
                     media_type = "Text"
                     filename = "Text Content"
 
+                # Generate caption
                 caption = (
                     CUSTOM_CAPTION.format(
                         previouscaption=(msg.caption.html if msg.caption else "🔥 𝐇𝐈𝐃𝐃𝐄𝐍𝐒 🔥"),
@@ -108,29 +138,21 @@ async def start_command(client: Client, message: Message):
                         reply_markup=reply_markup,
                         protect_content=False,
                     )
+                    
                     if copied_msg:
                         codeflix_msgs.append(copied_msg)
+                        
                 except Exception as e:
                     print(f"Failed to send individual message: {e}")
                     await message.reply_text("❌ Failed to send the content!")
                     return
             
-            # Send random message after main content
-            random_messages = await get_all_random_messages()
-            if random_messages:
-                channel_id, msg_id = random.choice(random_messages)
-                try:
-                    random_msg = (await get_messages(client, [msg_id], channel_id))[0]
-                    if random_msg:
-                        copied_random = await random_msg.copy(
-                            chat_id=message.from_user.id,
-                            protect_content=False
-                        )
-                        codeflix_msgs.append(copied_random)
-                except Exception as e:
-                    print(f"Failed to send random message: {e}")
+            # Send random special message
+            special_msg = await send_random_special_message(client, message.from_user.id)
+            if special_msg:
+                codeflix_msgs.append(special_msg)
 
-            # Send deletion notification
+            # Notify user about auto-deletion for individual message
             k = await client.send_message(
                 chat_id=message.from_user.id,
                 text=f"<b>‼️ 𝐓𝐡𝐢𝐬 𝐋𝐄𝐂𝐓𝐔𝐑𝐄/𝐏𝐃𝐅 𝐰𝐢𝐥𝐥 𝐛𝐞 <u>𝗮𝘂𝘁𝗼-𝗱𝗲𝗹𝗲𝘁𝗲𝗱 𝗶𝗻 𝟯 𝗱𝗮𝘆𝘀</u> 💀</b>\n\n"
@@ -141,10 +163,13 @@ async def start_command(client: Client, message: Message):
             )
             
             codeflix_msgs.append(k)
+            # Schedule auto-deletion for individual message
             asyncio.create_task(delete_files(codeflix_msgs, client, message, k, INDIVIDUAL_DELETE_TIME))
             return
 
+        # Handle batch link
         elif link_type == "batch":
+            # Generate message ID range
             if s_msg_id is not None:
                 if f_msg_id <= s_msg_id:
                     ids = list(range(f_msg_id, s_msg_id + 1))
@@ -158,9 +183,9 @@ async def start_command(client: Client, message: Message):
                 messages = await get_messages(client, ids, channel_id)
                 print(f"Fetched {len(messages)} messages for channel_id={channel_id}, ids={ids}")
                 if not messages or all(msg is None for msg in messages):
-                    await temp_msg.edit("Failed to fetch messages. They may have been deleted or is inaccessible.")
+                    await temp_msg.edit("Failed to fetch messages. They may have been deleted or are inaccessible.")
                     return
-            except Exception as e:
+            except (ChannelInvalid, PeerIdInvalid, BadRequest, Exception) as e:
                 await temp_msg.edit(f"Something went wrong: {str(e)}")
                 print(f"Error getting messages from {channel_id}: {e}")
                 return
@@ -189,6 +214,7 @@ async def start_command(client: Client, message: Message):
                     media_type = "Text"
                     filename = "Text Content"
 
+                # Generate caption
                 caption = (
                     CUSTOM_CAPTION.format(
                         previouscaption=(msg.caption.html if msg.caption else "🔥 𝐇𝐈𝐃𝐃𝐄𝐍𝐒 🔥"),
@@ -199,9 +225,11 @@ async def start_command(client: Client, message: Message):
                     else (msg.caption.html if msg.caption else "")
                 )
 
+                # Create individual access button with *8
                 base64_string2 = await encode_link(user_id=user_id, f_msg_id=msg.id, channel_id=channel_id)
                 individual_button = InlineKeyboardButton("😁 𝗖𝗟𝗜𝗖𝗞 𝗧𝗢 𝗦𝗔𝗩𝗘 📥", url=f"https://t.me/{client.username}?start={base64_string2}")
 
+                # Handle reply_markup
                 if DISABLE_CHANNEL_BUTTON:
                     reply_markup = None
                 elif msg.reply_markup:
@@ -241,22 +269,12 @@ async def start_command(client: Client, message: Message):
                 except Exception as e:
                     print(f"Failed to send message: {e}")
 
-            # Send random message after main content
-            random_messages = await get_all_random_messages()
-            if random_messages:
-                channel_id, msg_id = random.choice(random_messages)
-                try:
-                    random_msg = (await get_messages(client, [msg_id], channel_id))[0]
-                    if random_msg:
-                        copied_random = await random_msg.copy(
-                            chat_id=message.from_user.id,
-                            protect_content=PROTECT_CONTENT
-                        )
-                        codeflix_msgs.append(copied_random)
-                except Exception as e:
-                    print(f"Failed to send random message: {e}")
+            # Send random special message
+            special_msg = await send_random_special_message(client, message.from_user.id)
+            if special_msg:
+                codeflix_msgs.append(special_msg)
 
-            # Send deletion notification
+            # Notify user about auto-deletion
             k = await client.send_message(
                 chat_id=message.from_user.id,
                 text=f"<b>🔥 Hurry! These Lectures/PDFs will be <u>deleted automatically in 4 hours</u> ⏳</b>\n\n"
@@ -269,6 +287,7 @@ async def start_command(client: Client, message: Message):
             asyncio.create_task(delete_files(codeflix_msgs, client, message, k, BULK_DELETE_TIME))
             return
 
+    # Default response for /start without parameters
     reply_markup = InlineKeyboardMarkup(
         [[
             InlineKeyboardButton("🔥 𝗠𝗔𝗜𝗡 𝗪𝗘𝗕𝗦𝗜𝗧𝗘 🔥", url="https://yashyasag.github.io/hiddens_officials")
@@ -336,7 +355,33 @@ async def get_users(client: Bot, message: Message):
     users = await full_userbase()
     await msg.edit(f"{len(users)} Users Are Using This Bot")
 
-@Bot.on_message(filters.command('broadcast') & filters.private & filters.user(ADMINS))
+@Bot.on_message(filters.command('add_random_message') & filters.private & filters.user(ADMINS))
+async def add_random_message(client: Bot, message: Message):
+    try:
+        msg_id = int(message.text.split(" ", 1)[1])
+        await add_special_message(msg_id)
+        await message.reply_text(f"✅ Message ID {msg_id} added to special messages.")
+    except IndexError:
+        await message.reply_text("❌ Please provide a message ID. Usage: /add_random_message <msg_id>")
+    except ValueError:
+        await message.reply_text("❌ Message ID must be a number.")
+    except Exception as e:
+        await message.reply_text(f"❌ Error: {str(e)}")
+
+@Bot.on_message(filters.command('remove_random_message') & filters.private & filters.user(ADMINS))
+async def remove_random_message(client: Bot, message: Message):
+    try:
+        msg_id = int(message.text.split(" ", 1)[1])
+        await remove_special_message(msg_id)
+        await message.reply_text(f"✅ Message ID {msg_id} removed from special messages.")
+    except IndexError:
+        await message.reply_text("❌ Please provide a message ID. Usage: /remove_random_message <msg_id>")
+    except ValueError:
+        await message.reply_text("❌ Message ID must be a number.")
+    except Exception as e:
+        await message.reply_text(f"❌ Error: {str(e)}")
+
+@Bot.on_message(filters.private & filters.command('broadcast') & filters.user(ADMINS))
 async def send_text(client: Bot, message: Message):
     if not message.reply_to_message:
         msg = await message.reply("Reply to a message to broadcast it.")
@@ -395,73 +440,8 @@ async def send_text(client: Bot, message: Message):
         for chat_id, msg_id in sent_messages:
             try:
                 await client.delete_messages(chat_id, msg_id)
-            except:
-                pass
-
-@Bot.on_message(filters.command('add_random_message') & filters.private & filters.user(ADMINS))
-async def add_random_message(client: Bot, message: Message):
-    try:
-        # Extract message link
-        link = message.text.split(maxsplit=1)[1]
-        if not link.startswith("-100"):
-            await message.reply("❌ Please provide a valid link format (-100{channel_id}:{msg_id})")
-            return
-        
-        # Parse link: -1002493255368:46223
-        parts = link.split(':')
-        if len(parts) != 2 or not parts[0].startswith("-100"):
-            await message.reply("❌ Invalid link format. Expected: -100{channel_id}:{msg_id}")
-            return
-        channel_id = parts[0][4:]  # Remove -100 prefix
-        msg_id = int(parts[1])
-
-        # Validate message existence (optional, skip in offline mode)
-        try:
-            messages = await get_messages(client, [msg_id], channel_id)
-            if not messages or messages[0] is None:
-                await message.reply(f"❌ Message {msg_id} in channel {channel_id} is inaccessible or does not exist")
-                return
-        except (ChannelInvalid, PeerIdInvalid, ChatAdminRequired, MessageIdsInvalid):
-            await message.reply(f"❌ Failed to validate message in channel {channel_id}. Adding anyway (offline mode).")
-        except Exception as e:
-            await message.reply(f"❌ Failed to validate message: {str(e)}. Adding anyway (offline mode).")
-            # Proceed to add even if validation fails (offline scenario)
-
-        # Add to database
-        await add_random_message(channel_id, msg_id)
-        await message.reply(f"✅ Added message -100{channel_id}:{msg_id} to random messages")
-    except IndexError:
-        await message.reply("❌ Please provide a message link after the command")
-    except ValueError:
-        await message.reply("❌ Invalid message ID in the link")
-    except Exception as e:
-        await message.reply(f"❌ Error adding message: {str(e)}")
-
-@Bot.on_message(filters.command('remove_random_message') & filters.private & filters.user(ADMINS))
-async def remove_random_message(client: Bot, message: Message):
-    try:
-        # Extract message link
-        link = message.text.split(maxsplit=1)[1]
-        if not link.startswith("-100"):
-            await message.reply("❌ Please provide a valid link format (-100{channel_id}:{msg_id})")
-            return
-        
-        # Parse link: -1002493255368:46223
-        parts = link.split(':')
-        if len(parts) != 2 or not parts[0].startswith("-100"):
-            await message.reply("❌ Invalid link format. Expected: -100{channel_id}:{msg_id}")
-            return
-        channel_id = parts[0][4:]  # Remove -100 prefix
-        msg_id = int(parts[1])
-        
-        await remove_random_message(channel_id, msg_id)
-        await message.reply(f"✅ Removed message -100{channel_id}:{msg_id} from random messages")
-    except IndexError:
-        await message.reply("❌ Please provide a message link after the command")
-    except ValueError:
-        await message.reply("❌ Invalid message ID in the link")
-    except Exception as e:
-        await message.reply(f"❌ Error removing message: {str(e)}")
+            except Exception as e:
+                print(f"Failed to delete broadcast message {msg_id} in chat {chat_id}: {e}")
 
 async def delete_files(codeflix_msgs, client, message, k, delete_time=None):
     if delete_time is None:
