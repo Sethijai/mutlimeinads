@@ -12,7 +12,7 @@ from pyrogram.errors.exceptions.bad_request_400 import BadRequest
 from bot import Bot
 from config import *
 from helper_func import subscribed, encode_link, decode_link, get_messages
-from database.database import add_user, del_user, full_userbase, present_user, add_special_message, remove_special_message, get_special_messages, add_scheduled_broadcast, get_active_scheduled_broadcasts, deactivate_scheduled_broadcast, delete_scheduled_broadcast, get_schedule_by_id, update_schedule_start_time
+from database.database import add_user, del_user, full_userbase, present_user, add_special_message, remove_special_message, get_special_messages, get_all_special_messages, add_scheduled_broadcast, get_active_scheduled_broadcasts, deactivate_scheduled_broadcast, delete_scheduled_broadcast, get_schedule_by_id, update_schedule_start_time
 
 # Different delete times for different access types
 BULK_DELETE_TIME = FILE_AUTO_DELETE
@@ -33,14 +33,17 @@ async def send_random_special_message(client: Client, chat_id: int):
     Send a random special message (any type: sticker, photo, video, document, text, etc.) to the specified chat.
     Returns the sent message object or None if no message was sent.
     """
-    special_msg_ids = await get_special_messages()
+    bot_id = client.username
+    special_msg_ids = await get_special_messages(bot_id)
     if not special_msg_ids:
+        print(f"No special messages found for bot {bot_id}")
         return None
 
     random_msg_id = random.choice(special_msg_ids)
     try:
         special_msg = await client.get_messages(client.db_channel.id, random_msg_id)
         if not special_msg:
+            print(f"Special message {random_msg_id} not found in channel {client.db_channel.id} for bot {bot_id}")
             return None
 
         # Prepare caption: use original caption with <b> formatting if it exists, otherwise None
@@ -94,12 +97,12 @@ async def send_random_special_message(client: Client, chat_id: int):
                 parse_mode=ParseMode.HTML
             )
         else:
-            print(f"Unsupported message type for special message {random_msg_id}")
+            print(f"Unsupported message type for special message {random_msg_id} for bot {bot_id}")
             return None
 
         return special_copied_msg
     except (ChannelInvalid, PeerIdInvalid, BadRequest, Exception) as e:
-        print(f"Failed to fetch/send special message {random_msg_id}: {e}")
+        print(f"Failed to fetch/send special message {random_msg_id} for bot {bot_id}: {e}")
         return None
 
 async def perform_broadcast_cycle(client: Client, chat_id: int, msg_id: int, delete_after: int, schedule_id: str, admin_chat_id: int):
@@ -255,7 +258,7 @@ async def start_command(client: Client, message: Message):
                 await message.reply_text("❌ You are not authorized to access this content!")
                 return
             
-            temp_msg = await message.reply("�_R𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
+            temp_msg = await message.reply("𝗥𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
             try:
                 messages = await get_messages(client, [f_msg_id], channel_id)
                 if not messages or all(msg is None for msg in messages):
@@ -350,7 +353,7 @@ async def start_command(client: Client, message: Message):
             else:
                 ids = [f_msg_id]
 
-            temp_msg = await message.reply("�_R𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
+            temp_msg = await message.reply("𝗥𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
             try:
                 messages = await get_messages(client, ids, channel_id)
                 print(f"Fetched {len(messages)} messages for channel_id={channel_id}, ids={ids}")
@@ -419,7 +422,7 @@ async def start_command(client: Client, message: Message):
                         chat_id=message.from_user.id,
                         caption=caption,
                         parse_mode=ParseMode.HTML,
-                        reply_markup=reply markup,
+                        reply_markup=reply_markup,
                         protect_content=PROTECT_CONTENT,
                     )
                     if copied_msg:
@@ -452,7 +455,7 @@ async def start_command(client: Client, message: Message):
                 text=f"<b>🔥 Hurry! These Lectures/PDFs will be <u>deleted automatically in 4 hours</u> ⏳</b>\n\n"
                      f"<b>𝘚𝘰 𝘍𝘰𝘳 𝘚𝘢𝘷𝘪𝘯𝘨 𝘓𝘦𝘤𝘵𝘶𝘳𝘦/𝘗𝘥𝘧 𝘤𝘭𝘪𝘤𝘬 𝘰𝘯 𝘣𝘦𝘭𝘰𝘸 𝘣𝘶𝘵𝘵𝘰𝘯(😁 𝗖𝗟𝗜𝗖𝗞 𝗧𝗢 𝗦𝗔𝗩𝗘 📥) then 𝘠𝘰𝘶 𝘤𝘢𝘯 𝘚𝘢𝘷𝘦 𝘪𝘯 𝘎𝘢𝘭𝘭𝘦𝘳𝘺 😊</b>\n\n"
                      f"<b>😎 Don’t worry! Even after deletion, you can still re-access everything anytime through our websites 😘</b>\n\n"
-                     f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗩𝗶𝘀𝗶𝘁 𝗠𝗼𝗿𝗲 𝗪𝗲𝗯𝘀𝗶𝘁𝗲𝘀 🌟</a></b>",
+                     f"<b><a href='https://yashyasag.github.io/hiddens_officials'>🌟 𝗩𝗶𝘀𝗶𝘁 𝗠𝗼𝗿𝗲 𝗪𝗲𝗯𝘀𝗶𝘁𝗲𝘀 🌟</a></b>",
             )
 
             codeflix_msgs.append(k)
@@ -529,10 +532,11 @@ async def get_users(client: Bot, message: Message):
 
 @Bot.on_message(filters.command('add_random_message') & filters.private & filters.user(ADMINS))
 async def add_random_message(client: Bot, message: Message):
+    bot_id = client.username
     try:
         msg_id = int(message.text.split(" ", 1)[1])
-        await add_special_message(msg_id)
-        await message.reply_text(f"✅ Message ID {msg_id} added to special messages.")
+        await add_special_message(msg_id, bot_id)
+        await message.reply_text(f"✅ Message ID {msg_id} added to special messages for {bot_id}.")
     except IndexError:
         await message.reply_text("❌ Please provide a message ID. Usage: /add_random_message <msg_id>")
     except ValueError:
@@ -542,16 +546,41 @@ async def add_random_message(client: Bot, message: Message):
 
 @Bot.on_message(filters.command('remove_random_message') & filters.private & filters.user(ADMINS))
 async def remove_random_message(client: Bot, message: Message):
+    bot_id = client.username
     try:
         msg_id = int(message.text.split(" ", 1)[1])
-        await remove_special_message(msg_id)
-        await message.reply_text(f"✅ Message ID {msg_id} removed from special messages.")
+        await remove_special_message(msg_id, bot_id)
+        await message.reply_text(f"✅ Message ID {msg_id} removed from special messages for {bot_id}.")
     except IndexError:
         await message.reply_text("❌ Please provide a message ID. Usage: /remove_random_message <msg_id>")
     except ValueError:
         await message.reply_text("❌ Message ID must be a number.")
     except Exception as e:
         await message.reply_text(f"❌ Error: {str(e)}")
+
+@Bot.on_message(filters.command('list_random_messages') & filters.private & filters.user(ADMINS))
+async def list_random_messages(client: Bot, message: Message):
+    bot_id = client.username
+    # Get this bot's special messages
+    msg_ids = await get_special_messages(bot_id)
+    response = f"<b>Special Messages for {bot_id}:</b>\n\n"
+    if msg_ids:
+        response += f"Message IDs: {', '.join(map(str, msg_ids))}\n"
+    else:
+        response += "No special messages configured.\n"
+
+    # Get all special messages for admin oversight
+    all_special_msgs = await get_all_special_messages()
+    other_bots_msgs = [doc for doc in all_special_msgs if doc['_id'] != f"{bot_id}_special_msg_ids"]
+    if other_bots_msgs:
+        response += "\n<b>Other Bots' Special Messages (Read-Only):</b>\n\n"
+        for doc in other_bots_msgs:
+            other_bot_id = doc['_id'].replace("_special_msg_ids", "")
+            msg_ids = doc.get('msg_ids', [])
+            response += f"Bot: {other_bot_id}\nMessage IDs: {', '.join(map(str, msg_ids)) if msg_ids else 'None'}\n\n"
+
+    response += "Use /add_random_message <msg_id> to add a message.\nUse /remove_random_message <msg_id> to remove a message."
+    await message.reply(response)
 
 @Bot.on_message(filters.private & filters.command('broadcast') & filters.user(ADMINS))
 async def send_text(client: Bot, message: Message):
@@ -644,7 +673,8 @@ async def broadcast_add(client: Bot, message: Message):
     # Calculate total number of messages
     total_messages = total_time // interval
 
-    # Add to database with admin_chat_id
+    # Add to database with bot_id
+    bot_id = client.username
     schedule_id = await add_scheduled_broadcast(
         admin_chat_id=message.chat.id,
         chat_id=message.chat.id,
@@ -652,7 +682,8 @@ async def broadcast_add(client: Bot, message: Message):
         total_time=total_time,
         interval=interval,
         delete_after=delete_after,
-        start_delay=start_delay
+        start_delay=start_delay,
+        bot_id=bot_id
     )
 
     # Start the task
@@ -663,6 +694,7 @@ async def broadcast_add(client: Bot, message: Message):
     await message.reply(
         f"✅ Scheduled broadcast added!\n"
         f"ID: {schedule_id}\n"
+        f"Bot: {bot_id}\n"
         f"Total Time: {humanize.naturaldelta(total_time)}\n"
         f"Interval: {humanize.naturaldelta(interval)}\n"
         f"Delete After: {humanize.naturaldelta(delete_after)}\n"
@@ -673,11 +705,15 @@ async def broadcast_add(client: Bot, message: Message):
 
 @Bot.on_message(filters.private & filters.command('broadcast_remove') & filters.user(ADMINS))
 async def broadcast_remove(client: Bot, message: Message):
+    bot_id = client.username
     try:
         schedule_id = message.text.split(" ", 1)[1]
         schedule = await get_schedule_by_id(schedule_id)
         if not schedule:
             await message.reply(f"❌ No scheduled broadcast with ID: {schedule_id}")
+            return
+        if schedule['bot_id'] != bot_id:
+            await message.reply(f"❌ Schedule {schedule_id} belongs to another bot: {schedule['bot_id']}")
             return
 
         await deactivate_scheduled_broadcast(schedule_id)
@@ -693,31 +729,51 @@ async def broadcast_remove(client: Bot, message: Message):
             print(f"Failed to notify admin chat {schedule['admin_chat_id']}: {e}")
         await message.reply(f"✅ Scheduled broadcast removed (ID: {schedule_id}).")
     except IndexError:
-        # List all active schedules
-        schedules = await get_active_scheduled_broadcasts()
+        # List all active schedules for this bot
+        schedules = await get_active_scheduled_broadcasts(bot_id)
+        all_schedules = await get_active_scheduled_broadcasts()  # For admin oversight
         if not schedules:
-            await message.reply("❌ No active scheduled broadcasts.")
-            return
+            response = "❌ No active scheduled broadcasts for this bot.\n"
+        else:
+            response = f"<b>Active Scheduled Broadcasts for {bot_id}:</b>\n\n"
+            for schedule in schedules:
+                total_messages = schedule['total_time'] // schedule['interval']
+                response += (
+                    f"ID: {schedule['_id']}\n"
+                    f"Bot: {schedule['bot_id']}\n"
+                    f"Total Time: {humanize.naturaldelta(schedule['total_time'])}\n"
+                    f"Interval: {humanize.naturaldelta(schedule['interval'])}\n"
+                    f"Delete After: {humanize.naturaldelta(schedule['delete_after'])}\n"
+                    f"Start Delay: {humanize.naturaldelta(schedule['start_delay']) if schedule['start_delay'] > 0 else 'Immediate'}\n"
+                    f"Total Messages: {total_messages}\n"
+                    f"Started: {humanize.naturaltime(time.time() - schedule['start_time'])} ago\n\n"
+                )
 
-        response = "<b>Active Scheduled Broadcasts:</b>\n\n"
-        for schedule in schedules:
-            total_messages = schedule['total_time'] // schedule['interval']
-            response += (
-                f"ID: {schedule['_id']}\n"
-                f"Total Time: {humanize.naturaldelta(schedule['total_time'])}\n"
-                f"Interval: {humanize.naturaldelta(schedule['interval'])}\n"
-                f"Delete After: {humanize.naturaldelta(schedule['delete_after'])}\n"
-                f"Start Delay: {humanize.naturaldelta(schedule['start_delay']) if schedule['start_delay'] > 0 else 'Immediate'}\n"
-                f"Total Messages: {total_messages}\n"
-                f"Started: {humanize.naturaltime(time.time() - schedule['start_time'])} ago\n\n"
-            )
-        response += "Use /broadcast_remove <schedule_id> to remove a specific schedule.\nUse /resume <schedule_id>[:{start_delay}] to resume a schedule."
+        # Show schedules from other bots (read-only)
+        other_schedules = [s for s in all_schedules if s['bot_id'] != bot_id]
+        if other_schedules:
+            response += "<b>Other Bots' Active Schedules (Read-Only):</b>\n\n"
+            for schedule in other_schedules:
+                total_messages = schedule['total_time'] // schedule['interval']
+                response += (
+                    f"ID: {schedule['_id']}\n"
+                    f"Bot: {schedule['bot_id']}\n"
+                    f"Total Time: {humanize.naturaldelta(schedule['total_time'])}\n"
+                    f"Interval: {humanize.naturaldelta(schedule['interval'])}\n"
+                    f"Delete After: {humanize.naturaldelta(schedule['delete_after'])}\n"
+                    f"Start Delay: {humanize.naturaldelta(schedule['start_delay']) if schedule['start_delay'] > 0 else 'Immediate'}\n"
+                    f"Total Messages: {total_messages}\n"
+                    f"Started: {humanize.naturaltime(time.time() - schedule['start_time'])} ago\n\n"
+                )
+
+        response += "Use /broadcast_remove <schedule_id> to remove a specific schedule owned by this bot.\nUse /resume <schedule_id>[:{start_delay}] to resume a schedule."
         await message.reply(response)
     except Exception as e:
         await message.reply(f"❌ Error: {str(e)}")
 
 @Bot.on_message(filters.private & filters.command('resume') & filters.user(ADMINS))
 async def resume_broadcast(client: Bot, message: Message):
+    bot_id = client.username
     try:
         parts = message.text.split(" ", 1)[1].split(":")
         schedule_id = parts[0]
@@ -733,7 +789,9 @@ async def resume_broadcast(client: Bot, message: Message):
     if not schedule:
         await message.reply(f"❌ No scheduled broadcast with ID: {schedule_id}")
         return
-
+    if schedule['bot_id'] != bot_id:
+        await message.reply(f"❌ Schedule {schedule_id} belongs to another bot: {schedule['bot_id']}")
+        return
     if schedule['active']:
         await message.reply(f"❌ Schedule {schedule_id} is already active.")
         return
@@ -756,17 +814,19 @@ async def resume_broadcast(client: Bot, message: Message):
     await message.reply(
         f"✅ Scheduled broadcast resumed!\n"
         f"ID: {schedule_id}\n"
+        f"Bot: {bot_id}\n"
         f"Start Delay: {humanize.naturaldelta(start_delay) if start_delay > 0 else 'Immediate'}\n"
         f"Started repeating... Stats will be sent after each cycle."
     )
 
 @Bot.on_message(filters.command("start") & filters.private & filters.user(ADMINS))
 async def admin_start(client: Client, message: Message):
-    schedules = await get_active_scheduled_broadcasts()
-    if schedules:
-        await message.reply(f"📊 {len(schedules)} active scheduled broadcasts running.")
-    else:
-        await message.reply("No active scheduled broadcasts.")
+    bot_id = client.username
+    schedules = await get_active_scheduled_broadcasts(bot_id)
+    msg_ids = await get_special_messages(bot_id)
+    response = f"📊 {len(schedules)} active scheduled broadcasts running for {bot_id}.\n"
+    response += f"📩 {len(msg_ids)} special messages configured for {bot_id}."
+    await message.reply(response)
 
 async def delete_files(codeflix_msgs, client, message, k, delete_time=None):
     if delete_time is None:
