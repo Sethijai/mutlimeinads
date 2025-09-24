@@ -36,12 +36,10 @@ async def send_random_special_message(client: Client, chat_id: int):
     try:
         special_msg = await client.get_messages(client.db_channel.id, random_msg_id)
         if not special_msg:
-            print(f"Special message {random_msg_id} not found.")
             return None
 
-        # Prepare caption (use original caption or None if absent)
-        caption = special_msg.caption.html if special_msg.caption else None
-        parse_mode = ParseMode.HTML if caption else None
+        # Prepare caption: use original caption with <b> formatting if it exists, otherwise None
+        caption = f"<b>{special_msg.caption.html}</b>" if special_msg.caption else None
 
         # Handle different message types
         if special_msg.sticker:
@@ -54,34 +52,47 @@ async def send_random_special_message(client: Client, chat_id: int):
                 chat_id=chat_id,
                 photo=special_msg.photo.file_id,
                 caption=caption,
-                parse_mode=parse_mode
+                parse_mode=ParseMode.HTML
             )
         elif special_msg.video:
             special_copied_msg = await client.send_video(
                 chat_id=chat_id,
                 video=special_msg.video.file_id,
                 caption=caption,
-                parse_mode=parse_mode
+                parse_mode=ParseMode.HTML
             )
         elif special_msg.document:
             special_copied_msg = await client.send_document(
                 chat_id=chat_id,
                 document=special_msg.document.file_id,
                 caption=caption,
-                parse_mode=parse_mode
+                parse_mode=ParseMode.HTML
             )
         elif special_msg.text:
             special_copied_msg = await client.send_message(
                 chat_id=chat_id,
-                text=special_msg.text,
-                parse_mode=ParseMode.HTML if special_msg.text.html else None
+                text=caption or special_msg.text,  # Use caption if exists, else raw text
+                parse_mode=ParseMode.HTML
+            )
+        elif special_msg.audio:
+            special_copied_msg = await client.send_audio(
+                chat_id=chat_id,
+                audio=special_msg.audio.file_id,
+                caption=caption,
+                parse_mode=ParseMode.HTML
+            )
+        elif special_msg.animation:
+            special_copied_msg = await client.send_animation(
+                chat_id=chat_id,
+                animation=special_msg.animation.file_id,
+                caption=caption,
+                parse_mode=ParseMode.HTML
             )
         else:
             print(f"Unsupported message type for special message {random_msg_id}")
             return None
 
         return special_copied_msg
-
     except (ChannelInvalid, PeerIdInvalid, BadRequest, Exception) as e:
         print(f"Failed to fetch/send special message {random_msg_id}: {e}")
         return None
@@ -196,7 +207,7 @@ async def start_command(client: Client, message: Message):
                      f"<b>⚡ Watch Lecture now ✅ or Save it - Forward, Download & Keep in your Gallery before time runs out!</b>\n\n"
                      f"<b>🤝 Don’t forget—share with friends, knowledge grows when shared ❣️</b>\n\n"
                      f"<b>😎 Chill! Even after deletion, you can always re-access everything on our websites 😉</b>\n\n"
-                     f"<b><a href='https://yashyasag.github.io/hiddens_officials'>✨ 𝗘𝘅𝗽𝗹𝗼𝗿𝗲 𝗠𝗼𝗿𝗲 𝗪𝗲𝗯𝘀𝗶𝘁𝗲𝘀 ✨</a></b>",
+                     f"<b><a href='https://yashyasag.github.io/hiddens_officials'>✨ �_E𝘅𝗽𝗹𝗼𝗿𝗲 𝗠𝗼𝗿𝗲 𝗪𝗲𝗯𝘀𝗶𝘁𝗲𝘀 ✨</a></b>",
             )
             
             codeflix_msgs.append(k)
@@ -220,7 +231,7 @@ async def start_command(client: Client, message: Message):
                 messages = await get_messages(client, ids, channel_id)
                 print(f"Fetched {len(messages)} messages for channel_id={channel_id}, ids={ids}")
                 if not messages or all(msg is None for msg in messages):
-                    await temp_msg.edit("Failed to fetch messages. They may have been deleted or are inaccessible.")
+                    await temp_msg.edit("Failed to fetch messages. They may have been deleted or is inaccessible.")
                     return
             except (ChannelInvalid, PeerIdInvalid, BadRequest, Exception) as e:
                 await temp_msg.edit(f"Something went wrong: {str(e)}")
@@ -315,7 +326,7 @@ async def start_command(client: Client, message: Message):
             k = await client.send_message(
                 chat_id=message.from_user.id,
                 text=f"<b>🔥 Hurry! These Lectures/PDFs will be <u>deleted automatically in 4 hours</u> ⏳</b>\n\n"
-                     f"<b>𝘚𝘰 𝘍𝘰𝘳 𝘚𝘢𝘷𝘪𝘯𝘨 𝘓𝘦𝘤𝘵𝘶𝘳𝘦/𝘗𝘥𝘧 𝘤𝘭𝘪𝘤𝘬 𝘰𝘯 𝘣𝘦𝘭𝘰𝘸 𝘣𝘶𝘵𝘵𝘰𝘯(😁 𝗖𝗟𝗜𝗖𝗞 𝗧𝗢 𝗦𝗔𝗩𝗘 📥) then �Y𝘰𝘶 𝘤𝘢𝘯 𝘚𝘢𝘷𝘦 𝘪𝘯 𝘎𝘢𝘭𝘭𝘦𝘳𝘺 😊</b>\n\n"
+                     f"<b>𝘚𝘰 𝘍𝘰𝘳 𝘚𝘢𝘷𝘪𝘯𝘨 𝘓𝘦𝘤𝘵𝘶𝘳𝘦/𝘗𝘥𝘧 𝘤𝘭𝘪𝘤𝘬 𝘰𝘯 𝘣𝘦𝘭𝘰𝘸 𝘣𝘶𝘵𝘵𝘰𝘯(😁 𝗖𝗟𝗜𝗖𝗞 𝗧𝗢 𝗦𝗔𝗩𝗘 📥) then 𝘠𝘰𝘶 𝘤𝘢𝘯 𝘚𝘢𝘷𝘦 𝘪𝘯 𝘎𝘢𝘭𝘭𝘦𝘳𝘺 😊</b>\n\n"
                      f"<b>😎 Don’t worry! Even after deletion, you can still re-access everything anytime through our websites 😘</b>\n\n"
                      f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗩𝗶𝘀𝗶𝘁 𝗠𝗼𝗿𝗲 𝗪𝗲𝗯𝘀𝗶𝘁𝗲𝘀 🌟</a></b>",
             )
