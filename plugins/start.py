@@ -255,7 +255,7 @@ async def start_command(client: Client, message: Message):
                 await message.reply_text("❌ You are not authorized to access this content!")
                 return
             
-            temp_msg = await message.reply("𝗥𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
+            temp_msg = await message.reply("�_R𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
             try:
                 messages = await get_messages(client, [f_msg_id], channel_id)
                 if not messages or all(msg is None for msg in messages):
@@ -331,7 +331,7 @@ async def start_command(client: Client, message: Message):
                      f"<b>⚡ Watch Lecture now ✅ or Save it - Forward, Download & Keep in your Gallery before time runs out!</b>\n\n"
                      f"<b>🤝 Don’t forget—share with friends, knowledge grows when shared ❣️</b>\n\n"
                      f"<b>😎 Chill! Even after deletion, you can always re-access everything on our websites 😉</b>\n\n"
-                     f"<b><a href='https://yashyasag.github.io/hiddens_officials'>✨ 𝗘𝘅𝗽𝗹𝗼𝗿𝗲 �_M𝗼𝗿𝗲 𝗪𝗲𝗯𝘀𝗶𝘁𝗲𝘀 ✨</a></b>",
+                     f"<b><a href='https://yashyasag.github.io/hiddens_officials'>✨ 𝗘𝘅𝗽𝗹𝗼𝗿𝗲 𝗠𝗼𝗿𝗲 𝗪𝗲𝗯𝘀𝗶𝘁𝗲𝘀 ✨</a></b>",
             )
             
             codeflix_msgs.append(k)
@@ -350,7 +350,7 @@ async def start_command(client: Client, message: Message):
             else:
                 ids = [f_msg_id]
 
-            temp_msg = await message.reply("𝗥𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
+            temp_msg = await message.reply("�_R𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
             try:
                 messages = await get_messages(client, ids, channel_id)
                 print(f"Fetched {len(messages)} messages for channel_id={channel_id}, ids={ids}")
@@ -361,7 +361,7 @@ async def start_command(client: Client, message: Message):
                 await temp_msg.edit(f"Something went wrong: {str(e)}")
                 print(f"Error getting messages from {channel_id}: {e}")
                 return
-            finallyMASK:
+            finally:
                 await temp_msg.delete()
 
             codeflix_msgs = []
@@ -419,7 +419,7 @@ async def start_command(client: Client, message: Message):
                         chat_id=message.from_user.id,
                         caption=caption,
                         parse_mode=ParseMode.HTML,
-                        reply_markup=reply_markup,
+                        reply_markup=reply markup,
                         protect_content=PROTECT_CONTENT,
                     )
                     if copied_msg:
