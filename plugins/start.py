@@ -6,6 +6,7 @@ from pyrogram import Client, filters, __version__
 from pyrogram.enums import ParseMode
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, ChannelInvalid, PeerIdInvalid, ChatAdminRequired
+from pyrogram.errors.exceptions.bad_request_400 import BadRequest
 from bot import Bot
 from config import *
 from helper_func import subscribed, encode_link, decode_link, get_messages
@@ -44,7 +45,7 @@ async def send_random_special_message(client: Client, chat_id: int):
             return special_copied_msg
         else:
             return None
-    except (ChannelInvalid, PeerIdInvalid, Exception) as e:
+    except (ChannelInvalid, PeerIdInvalid, BadRequest, Exception) as e:
         print(f"Failed to fetch/send special message {random_msg_id}: {e}")
         return None
 
@@ -82,13 +83,13 @@ async def start_command(client: Client, message: Message):
                 await message.reply_text("❌ You are not authorized to access this content!")
                 return
             
-            temp_msg = await message.reply("�_R𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
+            temp_msg = await message.reply("𝗥𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
             try:
                 messages = await get_messages(client, [f_msg_id], channel_id)
                 if not messages or all(msg is None for msg in messages):
                     await temp_msg.edit("Failed to fetch message. It may have been deleted or is inaccessible.")
                     return
-            except (ChannelInvalid, PeerIdInvalid, Exception) as e:
+            except (ChannelInvalid, PeerIdInvalid, BadRequest, Exception) as e:
                 await temp_msg.edit(f"Something went wrong: {str(e)}")
                 print(f"Error getting message {f_msg_id} from {channel_id}: {e}")
                 return
@@ -177,14 +178,14 @@ async def start_command(client: Client, message: Message):
             else:
                 ids = [f_msg_id]
 
-            temp_msg = await message.reply("�_R𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
+            temp_msg = await message.reply("𝗥𝘂𝗸 𝗘𝗸 𝗦𝗲𝗰 👽..")
             try:
                 messages = await get_messages(client, ids, channel_id)
                 print(f"Fetched {len(messages)} messages for channel_id={channel_id}, ids={ids}")
                 if not messages or all(msg is None for msg in messages):
                     await temp_msg.edit("Failed to fetch messages. They may have been deleted or are inaccessible.")
                     return
-            except (ChannelInvalid, PeerIdInvalid, Exception) as e:
+            except (ChannelInvalid, PeerIdInvalid, BadRequest, Exception) as e:
                 await temp_msg.edit(f"Something went wrong: {str(e)}")
                 print(f"Error getting messages from {channel_id}: {e}")
                 return
@@ -277,7 +278,7 @@ async def start_command(client: Client, message: Message):
             k = await client.send_message(
                 chat_id=message.from_user.id,
                 text=f"<b>🔥 Hurry! These Lectures/PDFs will be <u>deleted automatically in 4 hours</u> ⏳</b>\n\n"
-                     f"<b>𝘚𝘰 𝘍𝘰𝘳 𝘚𝘢𝘷𝘪𝘯𝘨 𝘓𝘦𝘤𝘵𝘶𝘳𝘦/𝘗𝘥𝘧 𝘤𝘭𝘪𝘤𝘬 𝘰𝘯 𝘣𝘦𝘭𝘰𝘸 𝘣𝘶𝘵𝘵𝘰𝘯(😁 𝗖𝗟𝗜𝗖𝗞 𝗧𝗢 𝗦𝗔𝗩𝗘 📥) then 𝘠𝘰𝘶 𝘤𝘢𝘯 𝘚𝘢𝘷𝘦 𝘪𝘯 𝘎𝘢𝘭𝘭𝘦𝘳𝘺 😊</b>\n\n"
+                     f"<b>𝘚𝘰 𝘍𝘰𝘳 𝘚𝘢𝘷𝘪𝘯𝘨 𝘓𝘦𝘤𝘵𝘶𝘳𝘦/𝘗𝘥𝘧 𝘤𝘭𝘪𝘤𝘬 𝘰𝘯 𝘣𝘦𝘭𝘰𝘸 𝘣𝘶𝘵𝘵𝘰𝘯(😁 𝗖𝗟𝗜𝗖𝗞 𝗧𝗢 𝗦𝗔𝗩𝗘 📥) then �Y𝘰𝘶 𝘤𝘢𝘯 𝘚𝘢𝘷𝘦 𝘪𝘯 𝘎𝘢𝘭𝘭𝘦𝘳𝘺 😊</b>\n\n"
                      f"<b>😎 Don’t worry! Even after deletion, you can still re-access everything anytime through our websites 😘</b>\n\n"
                      f"<b> <a href=https://yashyasag.github.io/hiddens_officials>🌟 𝗩𝗶𝘀𝗶𝘁 𝗠𝗼𝗿𝗲 𝗪𝗲𝗯𝘀𝗶𝘁𝗲𝘀 🌟</a></b>",
             )
