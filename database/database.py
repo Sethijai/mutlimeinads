@@ -28,37 +28,43 @@ async def del_user(user_id: int):
     user_data.delete_one({'_id': user_id})
     return
 
-async def add_special_message(msg_id: int):
+async def add_special_message(msg_id: int, bot_id: str):
     """
-    Add a message ID to the special messages collection.
+    Add a message ID to the special messages collection for a specific bot.
     """
     special_messages.update_one(
-        {'_id': 'special_msg_ids'},
+        {'_id': f"{bot_id}_special_msg_ids"},
         {'$addToSet': {'msg_ids': msg_id}},
         upsert=True
     )
     return
 
-async def remove_special_message(msg_id: int):
+async def remove_special_message(msg_id: int, bot_id: str):
     """
-    Remove a message ID from the special messages collection.
+    Remove a message ID from the special messages collection for a specific bot.
     """
     special_messages.update_one(
-        {'_id': 'special_msg_ids'},
+        {'_id': f"{bot_id}_special_msg_ids"},
         {'$pull': {'msg_ids': msg_id}}
     )
     return
 
-async def get_special_messages():
+async def get_special_messages(bot_id: str):
     """
-    Retrieve all special message IDs.
+    Retrieve all special message IDs for a specific bot.
     """
-    doc = special_messages.find_one({'_id': 'special_msg_ids'})
+    doc = special_messages.find_one({'_id': f"{bot_id}_special_msg_ids"})
     return doc['msg_ids'] if doc and 'msg_ids' in doc else []
 
-async def add_scheduled_broadcast(admin_chat_id: int, chat_id: int, reply_msg_id: int, total_time: int, interval: int, delete_after: int, start_delay: int = 0):
+async def get_all_special_messages():
     """
-    Add a scheduled broadcast to the database.
+    Retrieve all special message documents (for admin oversight).
+    """
+    return list(special_messages.find())
+
+async def add_scheduled_broadcast(admin_chat_id: int, chat_id: int, reply_msg_id: int, total_time: int, interval: int, delete_after: int, start_delay: int = 0, bot_id: str = None):
+    """
+    Add a scheduled broadcast to the database with bot_id.
     """
     schedule_id = str(uuid.uuid4())
     schedule_data = {
@@ -71,16 +77,20 @@ async def add_scheduled_broadcast(admin_chat_id: int, chat_id: int, reply_msg_id
         'delete_after': delete_after,
         'start_delay': start_delay,
         'start_time': time.time(),
-        'active': True
+        'active': True,
+        'bot_id': bot_id
     }
     scheduled_broadcasts.insert_one(schedule_data)
     return schedule_id
 
-async def get_active_scheduled_broadcasts():
+async def get_active_scheduled_broadcasts(bot_id: str = None):
     """
-    Get all active scheduled broadcasts.
+    Get all active scheduled broadcasts for a specific bot_id (or all if bot_id is None).
     """
-    return list(scheduled_broadcasts.find({'active': True}))
+    query = {'active': True}
+    if bot_id:
+        query['bot_id'] = bot_id
+    return list(scheduled_broadcasts.find(query))
 
 async def deactivate_scheduled_broadcast(schedule_id: str):
     """
