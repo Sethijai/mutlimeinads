@@ -2,6 +2,8 @@ import random
 import os
 import asyncio
 import humanize
+import time
+import uuid
 from pyrogram import Client, filters, __version__
 from pyrogram.enums import ParseMode
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
@@ -10,7 +12,7 @@ from pyrogram.errors.exceptions.bad_request_400 import BadRequest
 from bot import Bot
 from config import *
 from helper_func import subscribed, encode_link, decode_link, get_messages
-from database.database import add_user, del_user, full_userbase, present_user, add_special_message, remove_special_message, get_special_messages
+from database.database import add_user, del_user, full_userbase, present_user, add_special_message, remove_special_message, get_special_messages, add_scheduled_broadcast, get_active_scheduled_broadcasts, deactivate_scheduled_broadcast, delete_scheduled_broadcast, get_schedule_by_id, update_schedule_start_time
 
 # Different delete times for different access types
 BULK_DELETE_TIME = FILE_AUTO_DELETE
@@ -22,6 +24,9 @@ except NameError:
 codeflixbots = FILE_AUTO_DELETE
 subaru = codeflixbots
 file_auto_delete = humanize.naturaldelta(subaru)
+
+# Global dictionary to track scheduled broadcast tasks
+scheduled_broadcast_tasks = {}
 
 async def send_random_special_message(client: Client, chat_id: int):
     """
@@ -71,7 +76,7 @@ async def send_random_special_message(client: Client, chat_id: int):
         elif special_msg.text:
             special_copied_msg = await client.send_message(
                 chat_id=chat_id,
-                text=caption or special_msg.text,  # Use caption if exists, else raw text
+                text=caption or special_msg.text,
                 parse_mode=ParseMode.HTML
             )
         elif special_msg.audio:
@@ -96,6 +101,125 @@ async def send_random_special_message(client: Client, chat_id: int):
     except (ChannelInvalid, PeerIdInvalid, BadRequest, Exception) as e:
         print(f"Failed to fetch/send special message {random_msg_id}: {e}")
         return None
+
+async def perform_broadcast_cycle(client: Client, chat_id: int, msg_id: int, delete_after: int, schedule_id: str, admin_chat_id: int):
+    """
+    Perform one cycle of broadcasting and schedule deletion.
+    Sends stats to admin chat after cycle.
+    """
+    query = await full_userbase()
+    sent_messages = []
+    total = 0
+    successful = 0
+    blocked = 0
+    deleted = 0
+    unsuccessful = 0
+
+    try:
+        broadcast_msg = await client.get_messages(chat_id, msg_id)
+        if not broadcast_msg:
+            print(f"Broadcast message {msg_id} in chat {chat_id} not found.")
+            return
+    except Exception as e:
+        print(f"Error fetching broadcast message {msg_id}: {e}")
+        return
+
+    for user_id in query:
+        try:
+            sent = await broadcast_msg.copy(user_id)
+            sent_messages.append((user_id, sent.id))
+            successful += 1
+        except FloodWait as e:
+            await asyncio.sleep(e.x)
+            try:
+                sent = await broadcast_msg.copy(user_id)
+                sent_messages.append((user_id, sent.id))
+                successful += 1
+            except Exception:
+                unsuccessful += 1
+        except UserIsBlocked:
+            await del_user(user_id)
+            blocked += 1
+        except InputUserDeactivated:
+            await del_user(user_id)
+            deleted += 1
+        except Exception:
+            unsuccessful += 1
+        total += 1
+
+    print(f"Broadcast cycle for {schedule_id}: {successful}/{total} successful")
+
+    # Send stats to admin chat
+    stats_msg = f"""<b>📊 Broadcast Cycle Stats for ID: {schedule_id}</b>
+
+ᴛᴏᴛᴀʟ ᴜꜱᴇʀꜱ: <code>{total}</code>
+ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟ: <code>{successful}</code>
+ʙʟᴏᴄᴋᴇᴅ ᴜꜱᴇʀꜱ: <code>{blocked}</code>
+ᴅᴇʟᴇᴛᴇᴅ ᴀᴄᴄᴏᴜɴᴛꜱ: <code>{deleted}</code>
+ᴜɴꜱᴜᴄᴄᴇꜱꜱꜰᴜʟ: <code>{unsuccessful}</code>"""
+    try:
+        await client.send_message(admin_chat_id, stats_msg)
+    except Exception as e:
+        print(f"Failed to send stats to admin chat {admin_chat_id}: {e}")
+
+    # Schedule deletion after delete_after seconds
+    if delete_after > 0:
+        await asyncio.sleep(delete_after)
+        for user_id, sent_msg_id in sent_messages:
+            try:
+                await client.delete_messages(user_id, sent_msg_id)
+            except Exception as e:
+                print(f"Failed to delete broadcast message {sent_msg_id} in {user_id}: {e}")
+
+async def start_scheduled_broadcast(client: Client, schedule_id: str):
+    """
+    Start the scheduled broadcast loop for a specific schedule.
+    """
+    schedule = await get_schedule_by_id(schedule_id)
+    if not schedule:
+        print(f"Schedule {schedule_id} not found.")
+        return
+
+    admin_chat_id = schedule['admin_chat_id']
+    chat_id = schedule['chat_id']
+    reply_msg_id = schedule['reply_msg_id']
+    total_time = schedule['total_time']
+    interval = schedule['interval']
+    delete_after = schedule['delete_after']
+    start_time = schedule['start_time']
+    start_delay = schedule.get('start_delay', 0)
+
+    # Wait for the initial start delay
+    if start_delay > 0:
+        try:
+            await client.send_message(admin_chat_id, f"⏳ Scheduled broadcast {schedule_id} will start in {humanize.naturaldelta(start_delay)}.")
+            await asyncio.sleep(start_delay)
+        except Exception as e:
+            print(f"Failed to notify admin chat {admin_chat_id} about start delay: {e}")
+
+    while True:
+        current_schedule = await get_schedule_by_id(schedule_id)
+        if not current_schedule or not current_schedule.get('active', False):
+            print(f"Scheduled broadcast {schedule_id} deactivated or not found.")
+            break
+
+        current_time = time.time()
+        elapsed = current_time - start_time - start_delay
+
+        if elapsed >= total_time:
+            await deactivate_scheduled_broadcast(schedule_id)
+            try:
+                await client.send_message(admin_chat_id, f"✅ Scheduled broadcast {schedule_id} ended (total time reached).")
+            except Exception as e:
+                print(f"Failed to notify admin chat {admin_chat_id}: {e}")
+            print(f"Scheduled broadcast {schedule_id} ended (total time reached).")
+            break
+
+        # Perform the broadcast cycle
+        await perform_broadcast_cycle(client, chat_id, reply_msg_id, delete_after, schedule_id, admin_chat_id)
+
+        # Wait for next interval
+        await asyncio.sleep(interval)
 
 @Bot.on_message(filters.command('start') & filters.private & subscribed)
 async def start_command(client: Client, message: Message):
@@ -207,7 +331,7 @@ async def start_command(client: Client, message: Message):
                      f"<b>⚡ Watch Lecture now ✅ or Save it - Forward, Download & Keep in your Gallery before time runs out!</b>\n\n"
                      f"<b>🤝 Don’t forget—share with friends, knowledge grows when shared ❣️</b>\n\n"
                      f"<b>😎 Chill! Even after deletion, you can always re-access everything on our websites 😉</b>\n\n"
-                     f"<b><a href='https://yashyasag.github.io/hiddens_officials'>✨ �_E𝘅𝗽𝗹𝗼𝗿𝗲 𝗠𝗼𝗿𝗲 𝗪𝗲𝗯𝘀𝗶𝘁𝗲𝘀 ✨</a></b>",
+                     f"<b><a href='https://yashyasag.github.io/hiddens_officials'>✨ 𝗘𝘅𝗽𝗹𝗼𝗿𝗲 �_M𝗼𝗿𝗲 𝗪𝗲𝗯𝘀𝗶𝘁𝗲𝘀 ✨</a></b>",
             )
             
             codeflix_msgs.append(k)
@@ -231,13 +355,13 @@ async def start_command(client: Client, message: Message):
                 messages = await get_messages(client, ids, channel_id)
                 print(f"Fetched {len(messages)} messages for channel_id={channel_id}, ids={ids}")
                 if not messages or all(msg is None for msg in messages):
-                    await temp_msg.edit("Failed to fetch messages. They may have been deleted or is inaccessible.")
+                    await temp_msg.edit("Failed to fetch messages. They may have been deleted or are inaccessible.")
                     return
             except (ChannelInvalid, PeerIdInvalid, BadRequest, Exception) as e:
                 await temp_msg.edit(f"Something went wrong: {str(e)}")
                 print(f"Error getting messages from {channel_id}: {e}")
                 return
-            finally:
+            finallyMASK:
                 await temp_msg.delete()
 
             codeflix_msgs = []
@@ -490,6 +614,159 @@ async def send_text(client: Bot, message: Message):
                 await client.delete_messages(chat_id, msg_id)
             except Exception as e:
                 print(f"Failed to delete broadcast message {msg_id} in chat {chat_id}: {e}")
+
+@Bot.on_message(filters.private & filters.command('broadcast_add') & filters.user(ADMINS))
+async def broadcast_add(client: Bot, message: Message):
+    if not message.reply_to_message:
+        await message.reply("❌ Reply to a message to schedule broadcast.")
+        return
+
+    try:
+        parts = message.text.split(" ", 1)[1].split(":")
+        if len(parts) not in [3, 4]:
+            await message.reply("❌ Usage: /broadcast_add {total_time}:{interval}:{delete_after}[:{start_delay}]\nExample: /broadcast_add 86400:3600:600:3600")
+            return
+        total_time, interval, delete_after = map(int, parts[:3])
+        start_delay = int(parts[3]) if len(parts) == 4 else 0
+        if total_time <= 0 or interval <= 0 or delete_after < 0 or start_delay < 0:
+            await message.reply("❌ Times must be positive integers (total_time and interval >0, delete_after and start_delay >=0).")
+            return
+        if interval > total_time:
+            await message.reply("❌ Interval cannot be greater than total_time.")
+            return
+    except ValueError:
+        await message.reply("❌ Invalid format. Use integers separated by ':'. Example: 86400:3600:600:3600")
+        return
+    except Exception as e:
+        await message.reply(f"❌ Error: {str(e)}")
+        return
+
+    # Calculate total number of messages
+    total_messages = total_time // interval
+
+    # Add to database with admin_chat_id
+    schedule_id = await add_scheduled_broadcast(
+        admin_chat_id=message.chat.id,
+        chat_id=message.chat.id,
+        reply_msg_id=message.reply_to_message.id,
+        total_time=total_time,
+        interval=interval,
+        delete_after=delete_after,
+        start_delay=start_delay
+    )
+
+    # Start the task
+    global scheduled_broadcast_tasks
+    task = asyncio.create_task(start_scheduled_broadcast(client, schedule_id))
+    scheduled_broadcast_tasks[schedule_id] = task
+
+    await message.reply(
+        f"✅ Scheduled broadcast added!\n"
+        f"ID: {schedule_id}\n"
+        f"Total Time: {humanize.naturaldelta(total_time)}\n"
+        f"Interval: {humanize.naturaldelta(interval)}\n"
+        f"Delete After: {humanize.naturaldelta(delete_after)}\n"
+        f"Start Delay: {humanize.naturaldelta(start_delay) if start_delay > 0 else 'Immediate'}\n"
+        f"Total Messages: {total_messages}\n"
+        f"Started repeating... Stats will be sent after each cycle."
+    )
+
+@Bot.on_message(filters.private & filters.command('broadcast_remove') & filters.user(ADMINS))
+async def broadcast_remove(client: Bot, message: Message):
+    try:
+        schedule_id = message.text.split(" ", 1)[1]
+        schedule = await get_schedule_by_id(schedule_id)
+        if not schedule:
+            await message.reply(f"❌ No scheduled broadcast with ID: {schedule_id}")
+            return
+
+        await deactivate_scheduled_broadcast(schedule_id)
+        global scheduled_broadcast_tasks
+        task = scheduled_broadcast_tasks.get(schedule_id)
+        if task and not task.done():
+            task.cancel()
+        scheduled_broadcast_tasks.pop(schedule_id, None)
+
+        try:
+            await client.send_message(schedule['admin_chat_id'], f"✅ Scheduled broadcast {schedule_id} removed by admin.")
+        except Exception as e:
+            print(f"Failed to notify admin chat {schedule['admin_chat_id']}: {e}")
+        await message.reply(f"✅ Scheduled broadcast removed (ID: {schedule_id}).")
+    except IndexError:
+        # List all active schedules
+        schedules = await get_active_scheduled_broadcasts()
+        if not schedules:
+            await message.reply("❌ No active scheduled broadcasts.")
+            return
+
+        response = "<b>Active Scheduled Broadcasts:</b>\n\n"
+        for schedule in schedules:
+            total_messages = schedule['total_time'] // schedule['interval']
+            response += (
+                f"ID: {schedule['_id']}\n"
+                f"Total Time: {humanize.naturaldelta(schedule['total_time'])}\n"
+                f"Interval: {humanize.naturaldelta(schedule['interval'])}\n"
+                f"Delete After: {humanize.naturaldelta(schedule['delete_after'])}\n"
+                f"Start Delay: {humanize.naturaldelta(schedule['start_delay']) if schedule['start_delay'] > 0 else 'Immediate'}\n"
+                f"Total Messages: {total_messages}\n"
+                f"Started: {humanize.naturaltime(time.time() - schedule['start_time'])} ago\n\n"
+            )
+        response += "Use /broadcast_remove <schedule_id> to remove a specific schedule.\nUse /resume <schedule_id>[:{start_delay}] to resume a schedule."
+        await message.reply(response)
+    except Exception as e:
+        await message.reply(f"❌ Error: {str(e)}")
+
+@Bot.on_message(filters.private & filters.command('resume') & filters.user(ADMINS))
+async def resume_broadcast(client: Bot, message: Message):
+    try:
+        parts = message.text.split(" ", 1)[1].split(":")
+        schedule_id = parts[0]
+        start_delay = int(parts[1]) if len(parts) > 1 else None
+    except IndexError:
+        await message.reply("❌ Usage: /resume {schedule_id}[:{start_delay}]\nExample: /resume abc123:7200")
+        return
+    except ValueError:
+        await message.reply("❌ Invalid format. Start delay must be an integer.")
+        return
+
+    schedule = await get_schedule_by_id(schedule_id)
+    if not schedule:
+        await message.reply(f"❌ No scheduled broadcast with ID: {schedule_id}")
+        return
+
+    if schedule['active']:
+        await message.reply(f"❌ Schedule {schedule_id} is already active.")
+        return
+
+    # Update start_time and optionally start_delay
+    new_start_time = time.time()
+    await update_schedule_start_time(schedule_id, new_start_time, start_delay)
+    await deactivate_scheduled_broadcast(schedule_id)  # Ensure it's marked inactive until task starts
+    await scheduled_broadcasts.update_one(
+        {'_id': schedule_id},
+        {'$set': {'active': True}}
+    )
+
+    # Start the task
+    global scheduled_broadcast_tasks
+    task = asyncio.create_task(start_scheduled_broadcast(client, schedule_id))
+    scheduled_broadcast_tasks[schedule_id] = task
+
+    start_delay = start_delay if start_delay is not None else schedule.get('start_delay', 0)
+    await message.reply(
+        f"✅ Scheduled broadcast resumed!\n"
+        f"ID: {schedule_id}\n"
+        f"Start Delay: {humanize.naturaldelta(start_delay) if start_delay > 0 else 'Immediate'}\n"
+        f"Started repeating... Stats will be sent after each cycle."
+    )
+
+@Bot.on_message(filters.command("start") & filters.private & filters.user(ADMINS))
+async def admin_start(client: Client, message: Message):
+    schedules = await get_active_scheduled_broadcasts()
+    if schedules:
+        await message.reply(f"📊 {len(schedules)} active scheduled broadcasts running.")
+    else:
+        await message.reply("No active scheduled broadcasts.")
 
 async def delete_files(codeflix_msgs, client, message, k, delete_time=None):
     if delete_time is None:
